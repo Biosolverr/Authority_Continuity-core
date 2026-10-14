@@ -35,9 +35,9 @@ header{flex:none;position:sticky;top:0;z-index:20;background:rgba(5,9,19,.92);ba
 .conn .bad,.f .bad{border-color:var(--err)}
 .pkrow{display:flex;gap:6px}.pkrow button{flex:none}
 #msg{padding:0 20px 10px;font-size:12.5px;color:var(--err);display:none}
-main{flex:1;display:grid;grid-template-columns:290px minmax(0,1fr) 340px;min-height:0}
+main{flex:1;display:grid;grid-template-columns:290px minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr);min-height:0}
 section{min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#1c2c52 transparent}
-nav{border-right:1px solid var(--line);background:var(--panel)}
+nav{border-right:1px solid var(--line);background:var(--panel);min-height:0;overflow:hidden}
 .stage{padding:28px 32px}
 .tape{border-left:1px solid var(--line);padding:16px;background:var(--panel)}
 .navtop{position:sticky;top:0;background:var(--panel);z-index:2;padding:14px 16px 8px}
@@ -84,7 +84,7 @@ ol.fl{color:var(--mute);padding-left:20px;max-width:66ch;margin-bottom:24px}ol.f
 .spin{width:10px;height:10px;border:2px solid var(--dim);border-top-color:var(--sky);border-radius:50%;animation:s .8s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}
 .empty{color:var(--mute);font-size:13px;padding:14px 0;border-top:1px dashed var(--dim)}
-@media(max-width:1100px){body{overflow:auto}main{display:block}section{overflow:visible}nav,.tape{border:0;border-top:1px solid var(--line)}.stage{padding:22px 16px}.conn{grid-template-columns:1fr 1fr}#bCol{display:inline-block}.conn.closed,.conn.closed~#none{display:none}}
+@media(max-width:1100px){body{overflow:auto}main{display:block}nav{overflow:visible}section{overflow:visible}nav,.tape{border:0;border-top:1px solid var(--line)}.stage{padding:22px 16px}.conn{grid-template-columns:1fr 1fr}#bCol{display:inline-block}.conn.closed,.conn.closed~#none{display:none}}
 @media(max-width:560px){.conn{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.spin{animation:none}.btn{transition:none}}
 </style>

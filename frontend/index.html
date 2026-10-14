@@ -34,7 +34,7 @@ header{flex:none;position:sticky;top:0;z-index:20;background:rgba(5,9,19,.92);ba
 .conn input:focus,.conn select:focus,.f input:focus,.f select:focus,.f textarea:focus,.q:focus{border-color:var(--blue);outline:0;box-shadow:0 0 0 3px rgba(61,123,255,.22)}
 .conn .bad,.f .bad{border-color:var(--err)}
 .pkrow{display:flex;gap:6px}.pkrow button{flex:none}
-#msg{padding:0 20px 10px;font-size:12.5px;color:var(--err);display:none}
+#msg{padding:0 20px 10px;font-size:12.5px;color:var(--err);display:none}#msg.ok{color:var(--sky)}.conn .ok{border-color:var(--blue)}
 main{flex:1;display:grid;grid-template-columns:290px minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr);min-height:0}
 section{min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#1c2c52 transparent}
 nav{border-right:1px solid var(--line);background:var(--panel);min-height:0;overflow:hidden}
@@ -79,7 +79,7 @@ ol.fl{color:var(--mute);padding-left:20px;max-width:66ch;margin-bottom:24px}ol.f
 .t:hover .tn{color:var(--sky)}
 .t .tn{font-family:var(--mono);font-size:12.5px;display:flex;gap:8px;align-items:center}
 .t .tm{color:var(--mute);font-size:12px;margin-top:2px;display:flex;justify-content:space-between;gap:8px}
-.t .tr{font:11.5px/1.4 var(--mono);color:#b9c8ee;margin-top:6px;white-space:pre-wrap;word-break:break-all;max-height:84px;overflow:hidden}
+.t .tr{font:11.5px/1.4 var(--mono);color:#b9c8ee;margin-top:6px;white-space:pre-wrap;word-break:break-all;max-height:140px;overflow:hidden}
 .t.err .tn{color:var(--err)}
 .spin{width:10px;height:10px;border:2px solid var(--dim);border-top-color:var(--sky);border-radius:50%;animation:s .8s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}
@@ -244,7 +244,7 @@ const ADDR=/^0x[0-9a-fA-F]{40}$/,PK=/^0x[0-9a-fA-F]{64}$/;
 /* ========= 3. Connection (genlayer-js) ========= */
 let sig='',sdkP=null;
 const chip=(id,t,c)=>{const e=$('#'+id);e.querySelector('b').textContent=t;e.className='chip '+(c||'')};
-const say=t=>{const e=$('#msg');e.textContent=t||'';e.style.display=t?'block':'none'};
+const say=(t,ok)=>{const e=$('#msg');e.textContent=t||'';e.className=ok?'ok':'';e.style.display=t?'block':'none'};
 const tmo=(p,ms)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms))]);
 function fillChains(){
   const ks=Object.keys(CH).filter(k=>CH[k]&&typeof CH[k]==='object'&&(CH[k].id!==undefined||CH[k].name));
@@ -290,8 +290,28 @@ async function pollStatus(){
   catch{d.className='dot';b.textContent='protocol: no response'}
 }
 async function connect(){
-  say('');
-  try{await ensureClient();await pollStatus()}catch(e){say(e.message)}
+  const b=$('#bConn');b.disabled=true;b.textContent='Connecting...';say('');
+  try{
+    await ensureClient();
+    const chk=[['L','AuthorityLedger','get_stats',[]],['P','ProtectedProtocol','get_status',[]],['C','ContinuityCore','get_log',[0n,1n]]];
+    const res=await Promise.all(chk.map(async([k,n,f,a])=>{
+      const i=$('#i'+k);i.classList.remove('ok');
+      if(!cfg[k])return n+': no address';
+      if(!ADDR.test(cfg[k]))return n+': invalid address';
+      try{await client.readContract({address:cfg[k],functionName:f,args:a});i.classList.add('ok');return n+': ok'}
+      catch(e){return n+': no response, wrong address or network? ('+String(e.message||e).slice(0,80)+')'}
+    }));
+    await pollStatus();
+    const jobs=[['L','get_stats',[]],['P','get_status',[]],['P','get_guardians',[]],['P','get_risk_snapshot',[]],['C','get_log',['0','10']]];
+    await Promise.all(jobs.map(async([k,n,v])=>{
+      if(!$('#i'+k).classList.contains('ok'))return;
+      const mt=METHODS.find(x=>x.c===k&&x.n===n),e=addTape(mt,v);
+      try{const r=await run(mt,v);scanIds(r.data);finishTape(e,r)}
+      catch(err){e.state='err';e.text=String(err.message||err);redrawTape()}
+    }));
+    say((me?short(me):'no key')+' on '+cfg.chain+' | '+res.join(' | '),res.every(r=>r.endsWith(': ok')));
+  }catch(e){say(e.message)}
+  b.disabled=false;b.textContent='Connect';
 }
 
 /* ========= 4. Running a method ========= */

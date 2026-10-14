@@ -281,7 +281,7 @@ async function ensureClient(){
   sig=s;head();
 }
 function head(){
-  chip('cAcc',me?short(me):'none (read-only)',me?'ok':'');$('#cAcc b').title=me;
+  chip('cAcc',me?short(me):'none (read-only)',me?'ok':'');$('#cAcc').title=me?'Click to copy: '+me:'';
 }
 async function pollStatus(){
   const c=$('#cPause'),d=c.firstChild,b=c.querySelector('b');
@@ -430,7 +430,10 @@ for(const id of['sChain','iRpc','iPk','iL','iP','iC']){$('#'+id).addEventListene
 $('#bConn').onclick=connect;
 $('#cSdk').onclick=()=>{if(!GL)connect()};
 $('#bShow').onclick=e=>{const i=$('#iPk');i.type=i.type==='password'?'text':'password';e.target.textContent=i.type==='password'?'Show':'Hide'};
-$('#bNew').onclick=()=>{const k=GL?.generatePrivateKey?GL.generatePrivateKey():hex(crypto.getRandomValues(new Uint8Array(32)));$('#iPk').value=k;readCfg()};
+const genKey=()=>GL?.generatePrivateKey?GL.generatePrivateKey():hex(crypto.getRandomValues(new Uint8Array(32)));
+$('#bNew').onclick=()=>{if($('#iPk').value&&!confirm('Replace the current private key? Back it up first, it cannot be recovered.'))return;$('#iPk').value=genKey();readCfg();connect()};
+$('#cAcc').style.cursor='pointer';$('#cAcc').onclick=()=>{if(me)navigator.clipboard?.writeText(me)};
+if(!$('#iPk').value)$('#iPk').value=genKey();
 $('#bCol').onclick=()=>$('#conn').classList.toggle('closed');
 $('#bClr').onclick=()=>{st.tape=[];redrawTape()};
 if(matchMedia('(max-width:1100px)').matches&&cfg.pk&&cfg.L)$('#conn').classList.add('closed');

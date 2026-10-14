@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Authority Console — GenLayer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--fg:#fff;--mute:#8c8c8c;--dim:#4a4a4a;--line:#2b2b2b;--card:#0d0d0d;--sans:'Schibsted Grotesk',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--sans);display:flex;flex-direction:column;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid #fff;outline-offset:2px}
+header{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font-weight:700;font-size:17px;letter-spacing:-.02em;margin-right:auto}
+.brand i{font-style:normal;color:var(--mute);font-weight:400;margin-left:8px}
+.chip{border:1px solid var(--line);border-radius:99px;padding:4px 12px;font-size:12.5px;color:var(--mute);display:flex;align-items:center;gap:7px;background:none}
+.chip b{color:var(--fg);font-weight:500;font-family:var(--mono);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.dot.on{background:#fff}.dot.paused{background:none;border:2px solid #fff}
+.btn{border:1px solid var(--fg);background:var(--fg);color:var(--bg);border-radius:99px;padding:8px 18px;font-weight:700}
+.btn:hover{background:#d8d8d8}.btn[disabled]{opacity:.4;cursor:wait}
+.btn.ghost{background:none;color:var(--fg);border-color:var(--dim)}.btn.ghost:hover{border-color:var(--fg);background:none}
+.btn.sm{padding:3px 11px;font-size:12px;font-weight:500}
+main{flex:1;display:grid;grid-template-columns:300px minmax(0,1fr) 340px;min-height:0}
+section{min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#333 #000}
+nav{border-right:1px solid var(--line)}
+.stage{padding:28px 32px}
+.tape{border-left:1px solid var(--line);padding:16px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);margin:16px;border:1px solid var(--dim);border-radius:99px;padding:3px;position:sticky;top:0;background:#000;z-index:2}
+.tabs button{border:0;background:none;border-radius:99px;padding:8px 4px;font-size:12.5px;font-weight:500;color:var(--mute)}
+.tabs button small{opacity:.7;margin-left:4px}
+.tabs button.on{background:var(--fg);color:var(--bg)}
+.grp{padding:6px 16px 10px}
+.grp h4{font-weight:500;color:var(--mute);font-size:12.5px;padding:10px 8px 6px;display:flex;justify-content:space-between}
+.m{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;padding:8px;border-radius:8px;font-family:var(--mono);font-size:12.5px}
+.m:hover{background:#161616}
+.m.on{background:var(--fg);color:var(--bg)}
+.g{flex:none;width:10px;height:10px;border:1.5px solid currentColor;border-radius:50%}
+.g.w{background:currentColor;border-radius:2px}
+.g.p{background:currentColor;border-radius:2px;box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px currentColor}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.1;font-weight:700}
+.sub{color:var(--mute);margin:8px 0 22px;max-width:62ch}
+.kind{display:inline-block;border:1px solid var(--dim);border-radius:99px;padding:1px 10px;font-size:12px;color:var(--mute);margin-bottom:12px}
+.f{margin-bottom:16px;max-width:620px}
+.f label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mute);margin-bottom:5px}
+.f label span{font-family:var(--mono)}
+.f input,.f select,.f textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:13px}
+.f textarea{min-height:76px;resize:vertical}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--fg);outline:0}
+.chips{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.hsrc{margin-top:6px}
+.hsrc textarea{min-height:46px;font-size:12px}
+.row{display:flex;gap:10px;align-items:center;margin-top:22px}
+.out{margin-top:26px;max-width:760px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.out>div{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between}
+.out pre{padding:16px;font:12.5px/1.55 var(--mono);white-space:pre-wrap;word-break:break-all;max-height:340px;overflow:auto}
+.out.err pre{color:#fff;border-left:3px solid #fff}
+details{padding:0 16px 14px;color:var(--mute);font-size:12.5px}summary{cursor:pointer;padding:12px 0 6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;max-width:760px;margin:24px 0}
+.card{border:1px solid var(--line);border-radius:14px;padding:16px}
+.card .n{font-size:34px;font-weight:700;letter-spacing:-.03em}
+.card p{color:var(--mute);font-size:13px}
+.set{max-width:620px}.set .f{max-width:none}
+ol.fl{color:var(--mute);padding-left:20px;max-width:62ch;margin-bottom:24px}ol.fl li{padding:2px 0}ol.fl b{color:var(--fg);font-weight:500;font-family:var(--mono);font-size:12.5px}
+.tape h3{font-size:14px;font-weight:500;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.t{border-top:1px dashed var(--dim);padding:10px 2px;cursor:pointer}
+.t:hover .tn{text-decoration:underline}
+.t .tn{font-family:var(--mono);font-size:12.5px;display:flex;gap:8px;align-items:center}
+.t .tm{color:var(--mute);font-size:12px;margin-top:2px;display:flex;justify-content:space-between;gap:8px}
+.t .tr{font:11.5px/1.4 var(--mono);color:#cfcfcf;margin-top:6px;white-space:pre-wrap;word-break:break-all;max-height:84px;overflow:hidden}
+.spin{width:10px;height:10px;border:2px solid var(--dim);border-top-color:#fff;border-radius:50%;animation:s .8s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+.empty{color:var(--mute);font-size:13px;padding:14px 0;border-top:1px dashed var(--dim)}
+@media(max-width:1100px){body{overflow:auto}main{display:block}section{overflow:visible}nav,.tape{border:0;border-top:1px solid var(--line)}.stage{padding:22px 16px}}
+@media(prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Authority Console<i>AuthorityLedger + ProtectedProtocol + ContinuityCore</i></div>
+  <div class="chip" id="cNet">сеть <b>…</b></div>
+  <div class="chip" id="cAcc">аккаунт <b>—</b></div>
+  <div class="chip" id="cPause"><span class="dot"></span><span>протокол: нет адреса</span></div>
+  <button class="btn ghost sm" id="bSetup">Настройки</button>
+</header>
+<main>
+  <nav><section id="nav" style="height:100%"></section></nav>
+  <section class="stage" id="stage"></section>
+  <section class="tape"><h3>Лента вызовов <button class="btn ghost sm" id="bClr">Очистить</button></h3><div id="tape"></div></section>
+</main>
+
+<script type="module">
+/* ========= 1. Методы: 36 (Ledger) + 32 (Protocol) + 28 (ContinuityCore) = 96 ========= */
+// m(контракт, имя, тип[r|w|p], группа, "параметры", описание)
+// типы параметров: s строка · i число · b bool · a адрес · t текст · h sha256-хэш · ts unix-время · id id (64 hex) · cap capability · v сумма (wei)
+const m=(c,n,k,g,p,d)=>({c,n,k,g,d,ps:p?p.split(',').map(x=>{const[a,b]=x.trim().split(':');return{n:a,t:b||'s'}}):[]});
+const METHODS=[
+ m('L','set_protected_protocol_address','w','Настройка','protected_protocol_address:a','Один раз, только владелец: связывает Ledger с ProtectedProtocol.'),
+ m('L','create_delegation','w','Делегирования','delegate:a,capability:cap,scope:s,valid_from:ts,valid_until:ts,max_depth:i,intent_hash:h,revocable:b','Выдаёт полномочие. Возвращает delegation_id и помечает пересечения по scope.'),
+ m('L','redelegate','w','Делегирования','parent_id:id,new_delegate:a,valid_from:ts,valid_until:ts,intent_hash:h,revocable:b','Делегат передаёт полномочие дальше, в пределах окна родителя и max_depth.'),
+ m('L','revoke_delegation','w','Делегирования','delegation_id:id','Грантор отзывает делегирование (если revocable).'),
+ m('L','get_delegation','r','Делегирования','delegation_id:id','Полная запись делегирования.'),
+ m('L','is_delegation_valid','r','Делегирования','delegation_id:id,actor:a,capability:cap,scope:s','Проверка: действует ли делегирование для актора прямо сейчас.'),
+ m('L','get_potential_conflicts','r','Конфликты','delegation_id:id','Список делегирований, помеченных сканом как возможный конфликт.'),
+ m('L','resolve_conflict','w','Конфликты','delegation_id_a:id,delegation_id_b:id,intent_text_a:t,intent_text_b:t','LLM-суждение: CONFLICT / NO_CONFLICT / INCONCLUSIVE. Тексты должны совпасть с intent_hash.'),
+ m('L','get_conflict','r','Конфликты','delegation_id_a:id,delegation_id_b:id','Сохранённое решение по паре.'),
+ m('L','create_request','w','Запросы','delegation_id:id,capability:cap,scope:s,intent_hash:h,justification_hash:h,ttl_seconds:i','Делегат создаёт запрос на действие. Блокируется при подтверждённом CONFLICT.'),
+ m('L','expire_request','w','Запросы','request_id:id','Закрывает просроченный запрос.'),
+ m('L','cancel_request','w','Запросы','request_id:id','Заявитель отменяет свой запрос.'),
+ m('L','get_request','r','Запросы','request_id:id','Запись запроса и его статус.'),
+ m('L','adjudicate','w','Вердикт','request_id:id,intent_text:t,justification_text:t,valid_seconds:i','ИИ-вердикт IN_SCOPE / OUT_OF_SCOPE / INCONCLUSIVE. Для запросов БЕЗ привязанного действия.'),
+ m('L','get_verdict','r','Вердикт','request_id:id','Вердикт, срок действия и precedent_flag.'),
+ m('L','appeal_verdict','w','Вердикт','request_id:id,intent_text:t,new_justification_text:t,valid_seconds:i','Одна апелляция, только на INCONCLUSIVE: ИИ решает строго (сомнение = OUT_OF_SCOPE).'),
+ m('L','adjudicate_action','w','Вердикт','request_id:id,intent_text:t,action_text:t,justification_text:t,valid_seconds:i','Вердикт по ТОЧНОМУ действию: ИИ видит action_text (его sha256 = action_params_hash запроса). Обязателен для запросов с параметрами.'),
+ m('L','appeal_action_verdict','w','Вердикт','request_id:id,intent_text:t,action_text:t,new_justification_text:t,valid_seconds:i','Апелляция для запроса с привязанным действием (один раз, только после INCONCLUSIVE).'),
+ m('L','check_authority','r','Адаптер для любой цели','request_id:id,actor:a,capability:cap,action_params_hash:t','Универсальная проверка: authorized + reason. Пустой хэш параметров — если запрос без параметров.'),
+ m('L','create_request_with_params','w','Адаптер для любой цели','delegation_id:id,capability:cap,scope:s,intent_hash:h,justification_hash:h,ttl_seconds:i,action_params_hash:h','Запрос с action_params_hash = sha256 канонического текста действия. Вердикт по нему — только через adjudicate_action.'),
+ m('L','register_capability','w','Реестр capability','name:s,description:s,min_severity:i','Владелец добавляет новое полномочие. Имя: A–Z, 0–9, _. min_severity — порог до вызова ИИ.'),
+ m('L','register_capability_with_assurance','w','Реестр capability','name:s,description:s,min_severity:i,assurance_level:i','Как register_capability, но с классом последствий: 0 ROUTINE (без ИИ), 1 SENSITIVE, 2 CRITICAL.'),
+ m('L','set_capability_assurance','w','Реестр capability','name:s,assurance_level:i','Владелец может только ПОВЫШАТЬ класс последствий.'),
+ m('L','set_continuity_address','w','Ворота (ContinuityCore)','continuity_address:a','Один раз, только владелец: адрес контракта ContinuityCore. Проверяется пробным чтением.'),
+ m('L','require_gate_for_capability','w','Ворота (ContinuityCore)','name:s','Владелец ОБЯЗЫВАЕТ ворота для capability (назад не выключается): запросы без ворот отклоняются.'),
+ m('L','create_request_gated','w','Ворота (ContinuityCore)','delegation_id:id,capability:cap,scope:s,intent_hash:h,justification_hash:h,ttl_seconds:i,action_params_hash:t,gate_action_id:s','Запрос с воротами: id узла ACTION в ContinuityCore (например AC-1). action_params_hash можно оставить пустым.'),
+ m('L','get_gate_status','r','Ворота (ContinuityCore)','request_id:id','Открыты ли ворота запроса прямо сейчас и почему нет (GATE_CLOSED / GATE_UNAVAILABLE).'),
+ m('L','get_capability','r','Реестр capability','name:s','Описание и порог одного полномочия.'),
+ m('L','list_capabilities','r','Реестр capability','','Все зарегистрированные полномочия (список подставится в поля capability).'),
+ m('L','set_delegation_limit','w','Лимиты и согласование','delegation_id:id,max_requests:i','Грантор один раз ограничивает число запросов (1 = одноразовое).'),
+ m('L','require_approvals','w','Лимиты и согласование','delegation_id:id,approvers_csv:t,required:i','Комитет: адреса через запятую, нужно M подписей, пока делегирование не действует.'),
+ m('L','approve_delegation','w','Лимиты и согласование','delegation_id:id','Участник комитета подтверждает делегирование.'),
+ m('L','list_requests_of_delegation','r','Аудит','delegation_id:id,offset:i,limit:i','Запросы по делегированию (страница до 50).'),
+ m('L','list_delegations_of_scope','r','Аудит','scope:s,offset:i,limit:i','Делегирования на ресурс (scope).'),
+ m('L','list_delegations_of_delegate','r','Аудит','delegate:a,offset:i,limit:i','Все делегирования конкретного делегата.'),
+ m('L','get_stats','r','Аудит','','Счётчики: делегирования, запросы, вердикты.'),
+
+ m('P','set_ledger_address','w','Настройка','ledger_address:a','Один раз, только владелец: связывает протокол с Ledger.'),
+ m('P','add_severity_reporter','w','Severity','reporter:a','Владелец добавляет доверенного репортёра.'),
+ m('P','remove_severity_reporter','w','Severity','reporter:a','Владелец отключает репортёра.'),
+ m('P','report_severity','w','Severity','score:i','Репортёр публикует оценку тяжести инцидента.'),
+ m('P','get_risk_snapshot','r','Severity','','Медиана свежих отчётов и время последнего.'),
+ m('P','get_severity_report','r','Severity','reporter:a','Последний отчёт конкретного репортёра.'),
+ m('P','pause_via_verdict','w','Действия по вердикту','request_id:id','Пауза протокола по вердикту IN_SCOPE (вызывает делегат).'),
+ m('P','unpause_via_verdict','w','Действия по вердикту','request_id:id','Снятие паузы по вердикту IN_SCOPE.'),
+ m('P','set_slash_recipient','w','Штрафы','recipient:a','Один раз, только владелец: кому уходят сожжённые залоги.'),
+ m('P','sweep_slashed','w','Штрафы','','Любой может запустить: накопленные штрафы уходят заданному получателю (и только ему).'),
+ m('P','get_slash_info','r','Штрафы','','Получатель штрафов и накопленная сумма.'),
+  // ---- ContinuityCore: 17 записей + 11 чтений = 28
+ m('C','register_evidence','w','Факты (evidence)','claim:s,source_url:s,ttl_seconds:i','Регистрирует утверждение со ссылкой на источник (https) и сроком годности (60 с – 1 год).'),
+ m('C','verify_evidence','w','Факты (evidence)','evidence_id:id','Валидаторы читают источник и решают, подтверждает ли он утверждение. SUPPORTED запускает срок годности.'),
+ m('C','revalidate','w','Факты (evidence)','evidence_id:id','Повторная проверка после истечения: SAME / CHANGED / CONTRADICTED. Доступна только в REVALIDATION_PENDING.'),
+ m('C','reclaim','w','Факты (evidence)','evidence_id:id,new_claim:s','Владелец заново формулирует утверждение после EXPIRED / INVALIDATED (нельзя, если от факта зависят другие узлы).'),
+ m('C','register_judge','w','Судьи (judge)','description:s,labels:l,ttl_seconds:i','ИИ-судья с закрытым списком меток (2–8, формат A-Z0-9_). Нужен список: ["APPROVE","REJECT"].'),
+ m('C','add_golden','w','Судьи (judge)','judge_id:id,input_text:t,expected_label:s','Контрольный пример (только добавление, 3–8 штук, вход 8–800 символов).'),
+ m('C','propose_version','w','Судьи (judge)','judge_id:id,prompt_text:t','Версия промпта. Обязателен маркер {input}; нельзя вставлять тексты контрольных примеров.'),
+ m('C','run_case','w','Судьи (judge)','judge_id:id,version_no:i,case_idx:i','Валидаторы выполняют промпт на одном примере; PASS, если метка совпала.'),
+ m('C','activate_version','w','Судьи (judge)','judge_id:id,version_no:i','Включает версию, если все примеры PASS и результаты свежие (до часа).'),
+ m('C','finalize_recert','w','Судьи (judge)','judge_id:id','Итог пересертификации активной версии после истечения срока.'),
+ m('C','poll','w','Сроки и отзыв','lease_id:id','Обновляет сохранённое состояние факта или судьи по времени (ACTIVE→EXPIRING→EXPIRED).'),
+ m('C','request_revalidation','w','Сроки и отзыв','lease_id:id','EXPIRED (любой) или EXPIRING (только владелец) переходит в REVALIDATION_PENDING.'),
+ m('C','revoke','w','Сроки и отзыв','lease_id:id','Владелец отзывает факт или судью: INVALIDATED, зависимые узлы блокируются.'),
+ m('C','derive_assertion','w','Граф зависимостей','statement:s,parent_ids:l','Вывод из фактов. parent_ids: список ["EV-1"] или EV-1, EV-2 (до 8).'),
+ m('C','derive_action','w','Граф зависимостей','description:s,parent_ids:l,max_age_seconds:i','Узел-ворота: действие, допустимое, пока все факты свежие. max_age 0 = без ограничения по возрасту.'),
+ m('C','refresh_node','w','Граф зависимостей','node_id:id','Сохраняет эффективное состояние узла (кэш и журнал).'),
+ m('C','execute_action','w','Граф зависимостей','action_id:id','Владелец исполняет действие, если все факты под ним свежие. Одноразово: после этого ворота для Ledger закрыты.'),
+ m('C','get_state','r','Чтение (Continuity)','node_id:id','Эффективное состояние узла прямо сейчас.'),
+ m('C','get_blocker','r','Чтение (Continuity)','node_id:id','Какой факт блокирует узел (пусто, если не блокирует).'),
+ m('C','can_execute','r','Чтение (Continuity)','action_id:id','Открыты ли ворота: именно это спрашивает Ledger.'),
+ m('C','get_node','r','Чтение (Continuity)','node_id:id','Полная запись узла: состояние, сроки, последний вердикт.'),
+ m('C','get_golden','r','Чтение (Continuity)','judge_id:id,idx:i','Контрольный пример судьи.'),
+ m('C','get_version','r','Чтение (Continuity)','judge_id:id,version_no:i','Версия промпта и её состояние.'),
+ m('C','get_result','r','Чтение (Continuity)','judge_id:id,version_no:i,idx:i','Результат прогона примера: метка, время, PASS или FAIL.'),
+ m('C','get_active_prompt','r','Чтение (Continuity)','judge_id:id','Активный промпт, его версия и действует ли судья сейчас.'),
+ m('C','get_parents','r','Чтение (Continuity)','node_id:id','Родители узла.'),
+ m('C','get_children','r','Чтение (Continuity)','node_id:id,offset:i,limit:i','Потомки узла (страница до 100).'),
+ m('C','get_log','r','Чтение (Continuity)','offset:i,limit:i','Журнал переходов состояний.'),
+ m('P','get_status','r','Действия по вердикту','','Текущее состояние: paused и paused_at.'),
+ m('P','get_execution_status','r','Действия по вердикту','request_id:id','Был ли запрос уже исполнен.'),
+ m('P','add_guardian','w','Guardian-ы и бонды','guardian:a','Владелец добавляет guardian-а.'),
+ m('P','remove_guardian','w','Guardian-ы и бонды','guardian:a','Владелец отключает guardian-а.'),
+ m('P','deposit_bond','p','Guardian-ы и бонды','value:v','Внести бонд (payable). Минимум для подписи паузы — 0.1 GEN = 10^17.'),
+ m('P','withdraw_bond','w','Guardian-ы и бонды','amount:i','Вывести бонд, если нет неразрешённых пауз.'),
+ m('P','get_bond','r','Guardian-ы и бонды','guardian:a','Размер бонда.'),
+ m('P','get_active_signed_count','r','Guardian-ы и бонды','guardian:a','Сколько неразрешённых пауз подписал guardian.'),
+ m('P','propose_pause','w','Пауза guardian-ов','justification_text:t','Guardian предлагает быструю паузу (нужен бонд).'),
+ m('P','sign_pause','w','Пауза guardian-ов','pause_id:id','Подпись под паузой; при пороге N-из-M пауза исполняется.'),
+ m('P','link_ratification_request','w','Пауза guardian-ов','pause_id:id,request_id:id','Привязать запрос ратификации (capability RATIFY_GUARDIAN_PAUSE; justification_hash = sha256 текста паузы).'),
+ m('P','resolve_ratification','w','Пауза guardian-ов','pause_id:id','Прочесть вердикт; при не-IN_SCOPE — слэшинг и снятие паузы.'),
+ m('P','get_proposal','r','Пауза guardian-ов','pause_id:id','Состояние предложенной паузы.'),
+ m('P','propose_threshold_change','w','Порог N-из-M','new_threshold:i','Guardian предлагает новый порог.'),
+ m('P','vote_threshold_change','w','Порог N-из-M','proposal_id:id','Голос за изменение порога (нужно большинство).'),
+ m('P','get_threshold_proposal','r','Порог N-из-M','proposal_id:id','Голоса и состояние предложения.'),
+ m('P','canonical_threshold_payload','r','Критическое действие','new_threshold:i','Точный текст действия для смены порога (зависит от ТЕКУЩЕГО порога). Хэшируйте его в action_params_hash и показывайте ИИ в adjudicate_action.'),
+ m('P','propose_critical_threshold_change','w','Критическое действие','request_id:id,new_threshold:i','Делегат с вердиктом IN_SCOPE по CHANGE_GUARDIAN_THRESHOLD предлагает новый порог. Хэш действия цель считает сама.'),
+ m('P','approve_critical_action','w','Критическое действие','request_id:id','Guardian одобряет; при числе голосов = текущему порогу право перепроверяется и порог меняется.'),
+ m('P','get_critical_action','r','Критическое действие','request_id:id','Голоса, нужное число, срок и статус критического предложения.'),
+ m('P','get_guardians','r','Guardian-ы и бонды','','Активные guardian-ы и текущий порог.'),
+];
+const CAPS=['PAUSE_PROTOCOL','UNPAUSE_PROTOCOL','RATIFY_GUARDIAN_PAUSE','CHANGE_GUARDIAN_THRESHOLD'];
+const CN={L:'AuthorityLedger',P:'ProtectedProtocol',C:'ContinuityCore'};
+const TAB={L:'Ledger',P:'Protocol',C:'Continuity'};
+
+/* ========= 2. Утилиты и состояние ========= */
+const $=s=>document.querySelector(s);
+const h=(t,a={},...k)=>{const e=document.createElement(t);for(const[x,y]of Object.entries(a)){if(x.startsWith('on'))e[x]=y;else if(x==='class')e.className=y;else if(y!==false&&y!=null)e.setAttribute(x,y)}e.append(...k.flat().filter(v=>v!=null));return e};
+const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k)||'';localStorage.setItem(k,v)}catch{return ''}};
+const cfg={chain:LS('chain')||'studionet',rpc:LS('rpc'),pk:LS('pk'),L:LS('addrL'),P:LS('addrP'),C:LS('addrC')};
+const st={tab:'L',sel:null,tape:[],ids:new Set(),n:0};
+let GL,CH={},client=null,me='';
+
+const hex=b=>'0x'+[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+const ser=v=>v instanceof Map?Object.fromEntries([...v].map(([k,x])=>[k,ser(x)])):Array.isArray(v)?v.map(ser):typeof v==='bigint'?v.toString():v instanceof Uint8Array?hex(v):v&&typeof v==='object'?(Object.getPrototypeOf(v)===Object.prototype?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,ser(x)])):String(v)):v;
+const pretty=v=>typeof v==='string'?v:JSON.stringify(v,null,2);
+const sha=async t=>hex(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))).slice(2);
+const short=a=>a?a.slice(0,6)+'…'+a.slice(-4):'—';
+const scanIds=o=>{const t=JSON.stringify(o)||'';t.match(/\b[0-9a-f]{64}\b/g)?.forEach(i=>st.ids.add(i));t.match(/\b(?:EV|AS|AC|JD)-\d+\b/g)?.forEach(i=>st.ids.add(i))};
+
+/* ========= 3. Подключение к GenLayer (genlayer-js) ========= */
+async function loadSdk(){
+  const src=[['https://esm.sh/genlayer-js','https://esm.sh/genlayer-js/chains'],['https://cdn.jsdelivr.net/npm/genlayer-js/+esm','https://cdn.jsdelivr.net/npm/genlayer-js/chains/+esm']];
+  for(const[a,b]of src){try{const[x,y]=await Promise.all([import(a),import(b)]);GL=x;CH=y;return}catch(e){console.warn('SDK source failed',a,e)}}
+  throw new Error('Не удалось загрузить genlayer-js (esm.sh / jsDelivr). Проверьте сеть или прокси.');
+}
+async function connect(){
+  const o={chain:CH[cfg.chain]};
+  if(cfg.rpc)o.endpoint=cfg.rpc;
+  if(cfg.pk){const acc=GL.createAccount(cfg.pk);o.account=acc;me=acc.address}else me='';
+  client=GL.createClient(o);
+  if(!['studionet','localnet'].includes(cfg.chain)){try{await client.initializeConsensusSmartContract()}catch(e){console.warn(e)}}
+  head();pollStatus();
+}
+function head(){
+  $('#cNet').replaceChildren('сеть ',h('b',{},cfg.chain+(cfg.rpc?' · custom RPC':'')));
+  $('#cAcc').replaceChildren('аккаунт ',h('b',{title:me},me?short(me):'нет ключа'));
+}
+async function pollStatus(){
+  const c=$('#cPause'),d=c.firstChild,t=c.lastChild;
+  if(!client||!cfg.P){d.className='dot';t.textContent='протокол: нет адреса';return}
+  try{const r=ser(await client.readContract({address:cfg.P,functionName:'get_status',args:[]}));d.className='dot '+(r.paused?'paused':'on');t.textContent=r.paused?'протокол на паузе':'протокол работает'}
+  catch{d.className='dot';t.textContent='протокол: нет ответа'}
+}
+
+/* ========= 4. Выполнение метода ========= */
+async function parseArg(p,v){
+  v=(v??'').trim();
+  if(p.t==='b')return v==='true';
+  if(p.t==='l'){if(!v)throw new Error(`${p.n}: список пуст`);let a;if(v[0]==='['){try{a=JSON.parse(v)}catch{throw new Error(`${p.n}: неверный JSON-список`)}}else a=v.split(',').map(x=>x.trim()).filter(Boolean);if(!Array.isArray(a)||!a.length||a.some(x=>typeof x!=='string'))throw new Error(`${p.n}: нужен список строк`);return a}
+  if(['i','ts','v'].includes(p.t)){if(!/^-?\d+$/.test(v))throw new Error(`${p.n}: нужно целое число`);return BigInt(v)}
+  if(p.t==='a'&&!/^0x[0-9a-fA-F]{40}$/.test(v))throw new Error(`${p.n}: адрес вида 0x… (40 hex)`);
+  if(!v&&p.t!=='t')throw new Error(`${p.n}: поле пустое`);
+  return v;
+}
+function digest(r){
+  const s=ser(r),lr=s?.consensus_data?.leader_receipt?.[0],res=lr?.result;
+  return{status:s.statusName||s.status,exec:s.txExecutionResultName||lr?.execution_result,ret:res?.payload?.readable??res?.payload??null,err:lr?.genvm_result?.stderr||'',raw:s};
+}
+async function run(mt,vals){
+  if(!client)throw new Error('Клиент не подключён');
+  const address=cfg[mt.c];
+  if(!address)throw new Error(`Укажите адрес ${CN[mt.c]} в «Настройках»`);
+  const args=[];let value=0n;
+  for(let i=0;i<mt.ps.length;i++){const a=await parseArg(mt.ps[i],vals[i]);if(mt.k==='p')value=a;else args.push(a)}
+  if(mt.k!=='w'&&mt.k!=='p'){const r=await client.readContract({address,functionName:mt.n,args});const data=ser(r);if(mt.n==='list_capabilities'&&data&&typeof data==='object')Object.keys(data).forEach(k=>{if(!CAPS.includes(k))CAPS.push(k)});return{kind:'r',data}}
+  if(!cfg.pk)throw new Error('Для записи нужен аккаунт: создайте или импортируйте ключ в «Настройках»');
+  const hash=await client.writeContract({address,functionName:mt.n,args,value});
+  const rc=await client.waitForTransactionReceipt({hash,status:'ACCEPTED',retries:120,interval:3000});
+  return{kind:'w',hash:String(hash),d:digest(rc)};
+}
+
+/* ========= 5. Интерфейс ========= */
+const key=mt=>mt.c+'.'+mt.n;
+const glyph=k=>h('span',{class:'g '+(k==='r'?'':k)});
+function renderNav(){
+  const nav=$('#nav');nav.replaceChildren();
+  const cnt=c=>METHODS.filter(x=>x.c===c).length;
+  nav.append(h('div',{class:'tabs'},...['L','P','C'].map(c=>h('button',{class:st.tab===c?'on':'',onclick:()=>{st.tab=c;renderNav()}},TAB[c],h('small',{},cnt(c))))));
+  const groups=[...new Set(METHODS.filter(x=>x.c===st.tab).map(x=>x.g))];
+  for(const g of groups){
+    const ms=METHODS.filter(x=>x.c===st.tab&&x.g===g);
+    nav.append(h('div',{class:'grp'},h('h4',{},g,h('span',{},ms.length)),...ms.map(x=>h('button',{class:'m'+(st.sel&&key(st.sel)===key(x)?' on':''),onclick:()=>select(x)},glyph(x.k),x.n))));
+  }
+}
+function select(mt,prefill){st.sel=mt;st.tab=mt.c;renderNav();renderForm(mt,prefill)}
+
+function renderHome(){
+  st.sel=null;renderNav();
+  const stage=$('#stage'),acc=me;
+  const f=(id,lab,val,ph,ex)=>h('div',{class:'f'},h('label',{},lab),h('input',{id,value:val,placeholder:ph||'',autocomplete:'off',spellcheck:'false'}),ex);
+  const chainSel=h('select',{id:'sChain'},...Object.keys(CH).filter(k=>CH[k]?.id!==undefined||CH[k]?.name).map(k=>h('option',{value:k,selected:k===cfg.chain},k)));
+  stage.replaceChildren(
+    h('h1',{},'Консоль полномочий'),
+    h('p',{class:'sub'},METHODS.length+' методов трёх контрактов в одном окне. Выберите метод слева — форма откроется здесь, результат и история появятся в ленте справа.'),
+    h('div',{class:'cards'},
+      h('div',{class:'card'},h('div',{class:'n'},String(METHODS.filter(x=>x.c==='L').length)),h('p',{},'AuthorityLedger: полномочия, классы последствий, точное действие, вердикты, апелляция, аудит')),
+      h('div',{class:'card'},h('div',{class:'n'},String(METHODS.filter(x=>x.c==='P').length)),h('p',{},'ProtectedProtocol: severity, пауза по вердикту, guardian-ы, бонды, критический путь')),
+      h('div',{class:'card'},h('div',{class:'n'},String(METHODS.filter(x=>x.c==='C').length)),h('p',{},'ContinuityCore: проверенные факты со сроком годности, узлы-ворота, судьи с контрольными примерами'))),
+    h('ol',{class:'fl'},
+      h('li',{},'Задеплойте оба контракта в Studio (вкладка Contracts) и скопируйте адреса сюда.'),
+      h('li',{},'Владелец вызывает ',h('b',{},'set_protected_protocol_address'),' и ',h('b',{},'set_ledger_address'),' (по одному разу).'),
+      h('li',{},'Владелец добавляет репортёров и guardian-ов; репортёры шлют ',h('b',{},'report_severity'),' чаще, чем раз в 10 минут.'),
+      h('li',{},'create_delegation → create_request → adjudicate (если INCONCLUSIVE — appeal_verdict) → pause_via_verdict.'),
+      h('li',{},'Ворота: ContinuityCore register_evidence → verify_evidence → derive_action, затем в Ledger set_continuity_address, require_gate_for_capability и create_request_gated.'),
+      h('li',{},'Критическое: canonical_threshold_payload → create_request_with_params (хэш этого текста) → adjudicate_action → propose_critical_threshold_change → approve_critical_action от guardian-ов.')),
+    h('div',{class:'set'},
+      h('div',{class:'f'},h('label',{},'Сеть'),chainSel),
+      f('iRpc','RPC (необязательно, например локальный Studio)',cfg.rpc,'http://localhost:4000/api'),
+      f('iPk','Приватный ключ аккаунта (хранится только в этом браузере)',cfg.pk,'0x… — или создайте новый',
+        h('div',{class:'chips'},h('button',{class:'btn ghost sm',onclick:()=>{const k=GL.generatePrivateKey?GL.generatePrivateKey():hex(crypto.getRandomValues(new Uint8Array(32)));$('#iPk').value=k}},'Создать новый'),h('span',{class:'tm',style:'color:var(--mute);font-size:12px'},acc?'адрес: '+acc:'ключа пока нет'))),
+      f('iL','Адрес AuthorityLedger',cfg.L,'0x…'),
+      f('iP','Адрес ProtectedProtocol',cfg.P,'0x…'),
+      f('iC','Адрес ContinuityCore',cfg.C,'0x…'),
+      h('div',{class:'row'},h('button',{class:'btn',onclick:saveCfg},'Сохранить и подключиться')),
+      h('div',{class:'f',style:'margin-top:28px'},h('label',{},'Хэшер: текст → sha256 (для intent_hash и justification_hash)'),h('textarea',{id:'tHash',placeholder:'Вставьте текст…'}),h('input',{id:'oHash',readonly:true,placeholder:'sha256',style:'margin-top:8px',onclick:e=>{e.target.select();navigator.clipboard?.writeText(e.target.value)}})),
+    ));
+  $('#tHash').oninput=async e=>{$('#oHash').value=e.target.value?await sha(e.target.value):''};
+}
+async function saveCfg(){
+  cfg.chain=$('#sChain').value;cfg.rpc=$('#iRpc').value.trim();cfg.pk=$('#iPk').value.trim();cfg.L=$('#iL').value.trim();cfg.P=$('#iP').value.trim();cfg.C=$('#iC').value.trim();
+  for(const k of ['chain','rpc','pk'])LS(k,cfg[k]);LS('addrL',cfg.L);LS('addrP',cfg.P);LS('addrC',cfg.C);
+  try{await connect();renderHome()}catch(e){alert('Ошибка подключения: '+e.message)}
+}
+
+function field(p,i,mt,pre){
+  const id='p'+i,val=pre?.[i]??'';
+  let el,extra=null;
+  if(p.t==='t')el=h('textarea',{id,spellcheck:'false'},val);
+  else if(p.t==='b')el=h('select',{id},h('option',{value:'true'},'true'),h('option',{value:'false',selected:val==='false'},'false'));
+  else if(p.t==='cap')el=h('input',{id,value:val||CAPS[0],list:'dlCaps',autocomplete:'off',spellcheck:'false',placeholder:'capability'});
+  else{
+    el=h('input',{id,value:val,autocomplete:'off',spellcheck:'false',inputmode:['i','ts','v'].includes(p.t)?'numeric':null,list:p.t==='id'?'dlIds':null,placeholder:{a:'0x…',h:'sha256 hex',id:'id',l:'["EV-1"] или EV-1, EV-2',ts:'unix, сек',v:'wei',i:'число'}[p.t]||''});
+    if(p.t==='a')extra=h('div',{class:'chips'},h('button',{class:'btn ghost sm',onclick:()=>{el.value=me}},'мой адрес'),cfg.L&&h('button',{class:'btn ghost sm',onclick:()=>{el.value=cfg.L}},'Ledger'),cfg.P&&h('button',{class:'btn ghost sm',onclick:()=>{el.value=cfg.P}},'Protocol'));
+    if(p.t==='ts')extra=h('div',{class:'chips'},...[['сейчас',0],['+1 ч',3600],['+1 день',86400],['+7 дней',604800]].map(([l,s])=>h('button',{class:'btn ghost sm',onclick:()=>{el.value=Math.floor(Date.now()/1000)+s}},l)));
+    if(p.t==='v')extra=h('div',{class:'chips'},...[['0.1 GEN','100000000000000000'],['1 GEN','1000000000000000000']].map(([l,v])=>h('button',{class:'btn ghost sm',onclick:()=>{el.value=v}},l)));
+    if(p.t==='h')extra=h('div',{class:'hsrc'},h('textarea',{placeholder:'…или вставьте исходный текст — хэш посчитается сам',oninput:async e=>{if(e.target.value)el.value=await sha(e.target.value)}}));
+  }
+  return h('div',{class:'f'},h('label',{},p.n,h('span',{},{a:'address',h:'sha256',ts:'unix time',id:'id',v:'wei',i:'int',b:'bool',t:'text',s:'str',cap:'capability',l:'list'}[p.t])),el,extra);
+}
+function renderForm(mt,pre){
+  const stage=$('#stage');
+  const dl=h('div',{},h('datalist',{id:'dlIds'},...[...st.ids].reverse().map(i=>h('option',{value:i}))),h('datalist',{id:'dlCaps'},...CAPS.map(c=>h('option',{value:c}))));
+  const out=h('div',{id:'out'});
+  const btn=h('button',{class:'btn',onclick:async()=>{
+    btn.disabled=true;
+    const vals=mt.ps.map((_,i)=>$('#p'+i).value);
+    const e=addTape(mt,vals);
+    try{
+      const r=await run(mt,vals);finishTape(e,r);showOut(out,r);
+    }catch(err){e.state='err';e.text=String(err.message||err);redrawTape();showOut(out,{kind:'e',msg:e.text})}
+    btn.disabled=false;pollStatus();
+  }},mt.k==='r'?'Прочитать':mt.k==='p'?'Отправить с value':'Отправить транзакцию');
+  stage.replaceChildren(
+    h('span',{class:'kind'},CN[mt.c]+' · '+(mt.k==='r'?'чтение, без подписи':mt.k==='p'?'запись, payable':'запись, подпись и консенсус')),
+    h('h1',{style:'font-family:var(--mono);font-size:26px;word-break:break-all'},mt.n),
+    h('p',{class:'sub'},mt.d),dl,
+    ...mt.ps.map((p,i)=>field(p,i,mt,pre)),
+    h('div',{class:'row'},btn,h('button',{class:'btn ghost',onclick:renderHome},'Настройки')),out);
+}
+function showOut(box,r){
+  if(r.kind==='e'){box.replaceChildren(h('div',{class:'out err'},h('div',{},'Ошибка'),h('pre',{},r.msg)));return}
+  if(r.kind==='r'){scanIds(r.data);box.replaceChildren(h('div',{class:'out'},h('div',{},'Результат'),h('pre',{},pretty(r.data))));return}
+  const d=r.d;scanIds(d.raw);
+  const bad=/ERROR/.test(d.exec||'');
+  box.replaceChildren(h('div',{class:'out'+(bad?' err':'')},
+    h('div',{},h('span',{},`${d.status||'—'} · ${d.exec||'—'}`),h('span',{style:'font-family:var(--mono);font-size:12px;color:var(--mute)'},short(r.hash))),
+    h('pre',{},d.ret!=null?pretty(d.ret):(d.err||'(метод ничего не вернул)')),
+    h('details',{},h('summary',{},'tx hash и полный receipt'),h('pre',{style:'padding:8px 0'},r.hash+'\n\n'+pretty(d.raw)))));
+}
+
+/* ========= 6. Лента вызовов ========= */
+function addTape(mt,vals){const e={id:++st.n,mt,vals,state:'pend',text:'',time:new Date()};st.tape.unshift(e);redrawTape();return e}
+function finishTape(e,r){
+  if(r.kind==='r'){e.state='ok';e.text=pretty(r.data)}
+  else{const bad=/ERROR/.test(r.d.exec||'');e.state=bad?'err':'ok';e.text=`${r.d.status||''} ${r.d.exec||''}\n`+(r.d.ret!=null?pretty(r.d.ret):r.d.err)}
+  redrawTape();
+}
+function redrawTape(){
+  const box=$('#tape');
+  if(!st.tape.length){box.replaceChildren(h('div',{class:'empty'},'Здесь появятся все вызовы: метод, время, статус и результат. Клик по записи открывает метод с теми же аргументами.'));return}
+  box.replaceChildren(...st.tape.map(e=>h('div',{class:'t',onclick:()=>select(e.mt,e.vals)},
+    h('div',{class:'tn'},e.state==='pend'?h('span',{class:'spin'}):glyph(e.state==='err'?'r':'w'),e.mt.n),
+    h('div',{class:'tm'},h('span',{},CN[e.mt.c]),h('span',{},e.state==='pend'?'ждём консенсус…':e.state==='err'?'ошибка':'готово',' · ',e.time.toLocaleTimeString())),
+    e.text&&h('div',{class:'tr'},e.text))));
+}
+
+/* ========= 7. Старт ========= */
+$('#bSetup').onclick=renderHome;
+$('#bClr').onclick=()=>{st.tape=[];redrawTape()};
+renderNav();redrawTape();
+$('#stage').replaceChildren(h('p',{class:'sub'},'Загружаю genlayer-js…'));
+try{
+  await loadSdk();
+  if(!CH[cfg.chain])cfg.chain='studionet';
+  await connect();
+}catch(e){console.error(e);$('#stage').prepend(h('p',{class:'sub'},'⚠ '+e.message))}
+renderHome();
+setInterval(pollStatus,20000);
+</script>
+</body>
+</html>

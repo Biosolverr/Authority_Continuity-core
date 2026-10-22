@@ -1,2 +1,0 @@
-genlayer-test
-pytest

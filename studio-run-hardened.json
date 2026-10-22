@@ -1,0 +1,1513 @@
+{
+ "schema": 1,
+ "kind": "manual run on GenLayer Studio of the hardened contract versions",
+ "network": "studionet",
+ "deployed": "2026-10-20 (explorer creation times 10:24:32, 10:26:17 and 10:26:58, zone as shown by the explorer)",
+ "how_to_read": "Transactions were sent by hand through the Studio UI following tests/RUNBOOK.md. Steps were matched to explorer rows by signer and method in order, with two manual corrections for operator mistakes (steps 1.12 and 1.13). The explorer shows relative times only. Full hashes appear where the output was pasted during the run, otherwise the explorer's shortened form.",
+ "contracts": {
+  "AuthorityLedger": {
+   "version": "v0.5.0",
+   "address": "0x8BBCAfee140B0c47c7E2941e0f2E418b67FC853e",
+   "deploy_tx": "0x24b7b183...88a0fb48",
+   "explorer_transactions": 50,
+   "reverted": 12,
+   "balance_gen": "0"
+  },
+  "ProtectedProtocol": {
+   "version": "v0.4.0",
+   "address": "0xC45EcEF90C7C001f2610bb78fb3a13cC16095A0d",
+   "deploy_tx": "0xd817709a...aaf9b743",
+   "explorer_transactions": 28,
+   "reverted": 4,
+   "balance_gen": "0.80",
+   "note": "28 rows: 25 calls, the deployment and 2 native transfers (the sweep to B and the bond withdrawal to A)"
+  },
+  "ContinuityCore": {
+   "version": "v0.4.0",
+   "address": "0xD22D7540A26529F84a377074a8e0e6ffadEAd5Bd",
+   "deploy_tx": "0x26d68165...0289ba0e",
+   "explorer_transactions": 26,
+   "reverted": 1,
+   "balance_gen": "0"
+  }
+ },
+ "accounts": {
+  "O": "0xd3e5F03720031D71A7c6766C39f36dD7ef3F28B8 (owner, deployer)",
+  "A": "0x4E23B18f0ac1C47F06DB7f99Aed9783e31B29e3C",
+  "B": "0x662aA10611Ef5F8D874B9A3d54446d5e41D1d367 (slash recipient)",
+  "X": "not used"
+ },
+ "summary": {
+  "explorer_rows": 104,
+  "calls": 99,
+  "deployments": 3,
+  "native_transfers": 2,
+  "reverted_calls": 17,
+  "reverts_with_captured_reason": 5,
+  "scenario_steps": 144,
+  "write_steps": 97,
+  "write_steps_run": 92,
+  "write_steps_not_run": [
+   "1.6",
+   "2.7",
+   "4.13",
+   "4.32",
+   "6.1"
+  ],
+  "run_steps_with_expected_outcome": "92 of 92",
+  "read_steps": 45,
+  "read_steps_with_captured_result": 6,
+  "sleep_steps": 2,
+  "operator_mistake_transactions": 7,
+  "bond_accounting": "Protocol balance 0.80 GEN = 1.0 deposited, 0.1 slashed and swept to B, 0.1 withdrawn by A. Matches the explorer's two native transfers."
+ },
+ "phases": {
+  "0": {
+   "write_steps": 9,
+   "ran": 9,
+   "not_run": []
+  },
+  "1": {
+   "write_steps": 22,
+   "ran": 21,
+   "not_run": [
+    "1.6"
+   ]
+  },
+  "2": {
+   "write_steps": 24,
+   "ran": 23,
+   "not_run": [
+    "2.7"
+   ]
+  },
+  "3": {
+   "write_steps": 6,
+   "ran": 6,
+   "not_run": []
+  },
+  "4": {
+   "write_steps": 18,
+   "ran": 16,
+   "not_run": [
+    "4.13",
+    "4.32"
+   ]
+  },
+  "5": {
+   "write_steps": 9,
+   "ran": 9,
+   "not_run": []
+  },
+  "6": {
+   "write_steps": 9,
+   "ran": 8,
+   "not_run": [
+    "6.1"
+   ]
+  }
+ },
+ "steps": [
+  {
+   "step": "0.1",
+   "phase": "0",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "set_protected_protocol_address",
+   "expected": "SUCCESS",
+   "tx": "0xb5476261...f22873d9",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "0.2",
+   "phase": "0",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "set_ledger_address",
+   "expected": "SUCCESS",
+   "tx": "0x7af4df12...c8809413",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "0.3",
+   "phase": "0",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "set_continuity_address",
+   "expected": "SUCCESS",
+   "tx": "0xf17f6490...8bd7593d",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "0.4",
+   "phase": "0",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "set_slash_recipient",
+   "expected": "SUCCESS",
+   "tx": "0xbef47266...f8081439",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "0.5",
+   "phase": "0",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "add_severity_reporter",
+   "expected": "SUCCESS",
+   "tx": "0x5a9c0b69...16dd7af5",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "0.5b",
+   "phase": "0",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "add_accepted_scope",
+   "expected": "SUCCESS",
+   "tx": "0xf43c1751...7b07c876",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "0.6",
+   "phase": "0",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "add_guardian",
+   "expected": "SUCCESS",
+   "tx": "0xe04f9a99...a3f02ad7",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "0.7",
+   "phase": "0",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "add_guardian",
+   "expected": "SUCCESS",
+   "tx": "0x55ec7411...bf91655a",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "0.8",
+   "phase": "0",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "add_guardian",
+   "expected": "SUCCESS",
+   "tx": "0x79e5c1a1...886cb5f6",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.1",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "register_capability_with_assurance",
+   "expected": "SUCCESS",
+   "tx": "0xe6524f4a...ac9ca430",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.3",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "create_delegation",
+   "expected": "SUCCESS",
+   "tx": "0xd0e8181a...024f44ff",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.4",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "set_delegation_limit",
+   "expected": "SUCCESS",
+   "tx": "0x6ba26140...6191c8f5",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.5",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request",
+   "expected": "SUCCESS",
+   "tx": "0xcd7ff0ed...e9526896",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.6",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request",
+   "expected": "ERROR",
+   "tx": null,
+   "note": "no transaction found: step was not run"
+  },
+  {
+   "step": "1.7",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "redelegate",
+   "expected": "ERROR",
+   "tx": "0x0b36ecc0f4d6186a565212ce09df9961f49f5ffc10fdaaa428125db813029d9b",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "LIMITED_NOT_REDELEGABLE",
+   "expected_reason": "LIMITED_NOT_REDELEGABLE"
+  },
+  {
+   "step": "1.8",
+   "phase": "1",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "report_severity",
+   "expected": "SUCCESS",
+   "tx": "0x12262009...0c704f83",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.9",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "adjudicate",
+   "expected": "SUCCESS",
+   "tx": "0xc860482b...aff01583",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.11",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "create_delegation",
+   "expected": "SUCCESS",
+   "tx": "0xb093887e...c288b903",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.12",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "redelegate",
+   "expected": "SUCCESS",
+   "tx": "0x126fdc24d1115aa2a638acaa5e9b092aa9ae114649572ba9e055a3e158ec6735",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.13",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "B",
+   "method": "create_request",
+   "expected": "SUCCESS",
+   "tx": "0x2917d5d7...fcbbf031",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.14",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "revoke_delegation",
+   "expected": "SUCCESS",
+   "tx": "0xad3324a3...b0aeb676",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.15",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "B",
+   "method": "create_request",
+   "expected": "ERROR",
+   "tx": "0xa0542966d07ae6992182b8317b788bf01284f359c5e3c3d83ffd0e2ebbc8bc58",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "DELEGATION_REVOKED",
+   "expected_reason": "DELEGATION_REVOKED"
+  },
+  {
+   "step": "1.17",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "create_delegation",
+   "expected": "SUCCESS",
+   "tx": "0x6dfd27d8...faa2a935",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.18",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "require_approvals",
+   "expected": "SUCCESS",
+   "tx": "0x2906c45f...783a1350",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.19",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request",
+   "expected": "ERROR",
+   "tx": "0xbbd5ee35...e514d863",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "APPROVALS_PENDING"
+  },
+  {
+   "step": "1.20",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "approve_delegation",
+   "expected": "SUCCESS",
+   "tx": "0x90220822...0a418374",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.21",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "B",
+   "method": "approve_delegation",
+   "expected": "SUCCESS",
+   "tx": "0x28ff658d...ca5abc4e",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.22",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request",
+   "expected": "SUCCESS",
+   "tx": "0xaa8386c1...f43fafd5",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.24",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "cancel_request",
+   "expected": "SUCCESS",
+   "tx": "0xd8240d5b...081cfbfc",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.30",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "set_capability_assurance",
+   "expected": "SUCCESS",
+   "tx": "0xb5e2e05792f4eb56b1a9c6415f58f84d3ce5da26fa89e3f0ee1def984df50adc",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "1.31",
+   "phase": "1",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "set_capability_assurance",
+   "expected": "ERROR",
+   "tx": "0xba7df583...5ae7a510",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "ASSURANCE_CAN_ONLY_INCREASE"
+  },
+  {
+   "step": "2.1",
+   "phase": "2",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "create_delegation",
+   "expected": "SUCCESS",
+   "tx": "0x1cc6ab35...60ba3baf",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.3",
+   "phase": "2",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request_with_params",
+   "expected": "SUCCESS",
+   "tx": "0x756dc033...4038ab49",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.4",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "report_severity",
+   "expected": "SUCCESS",
+   "tx": "0x5349ab15...e2a40027",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.5",
+   "phase": "2",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "adjudicate_action",
+   "expected": "SUCCESS",
+   "tx": "0xeaa5e0fe...308086a7",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.7",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "propose_critical_threshold_change",
+   "expected": "ERROR",
+   "tx": null,
+   "note": "no transaction found: step was not run"
+  },
+  {
+   "step": "2.8",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "propose_critical_threshold_change",
+   "expected": "SUCCESS",
+   "tx": "0xc4a3ac8d...d0b8fd52",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.10",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "approve_critical_action",
+   "expected": "SUCCESS",
+   "tx": "0xa30bb1bf...e3bcc1da",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.11",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "B",
+   "method": "approve_critical_action",
+   "expected": "SUCCESS",
+   "tx": "0xb6deb995...a68c7fd3",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.15",
+   "phase": "2",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request_with_params",
+   "expected": "SUCCESS",
+   "tx": "0xb9336673...9a768c19",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.16",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "report_severity",
+   "expected": "SUCCESS",
+   "tx": "0x58430584...144e0ef0",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.17",
+   "phase": "2",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "adjudicate_action",
+   "expected": "SUCCESS",
+   "tx": "0x0c3411e0...ad7642ee",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.19",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "propose_critical_threshold_change",
+   "expected": "ERROR",
+   "tx": "0x688a26dc...1ba50236",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "NOT_IN_SCOPE"
+  },
+  {
+   "step": "2.21",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "deposit_bond",
+   "expected": "SUCCESS",
+   "tx": "0xda8ca46e...abb9c93b",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.22",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "propose_pause",
+   "expected": "SUCCESS",
+   "tx": "0xb2a09fdf...e1c0ce65",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.23",
+   "phase": "2",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "create_delegation",
+   "expected": "SUCCESS",
+   "tx": "0x1a868ed6...b9d20c48",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.24",
+   "phase": "2",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request",
+   "expected": "SUCCESS",
+   "tx": "0x4275be87...a875d847",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.25",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "link_ratification_request",
+   "expected": "SUCCESS",
+   "tx": "0x8ca377b1...7a98906c",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.26",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "withdraw_bond",
+   "expected": "ERROR",
+   "tx": "0xfdfb058e...5d6155fb",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "BOND_LOCKED_BY_UNRESOLVED_PROPOSAL"
+  },
+  {
+   "step": "2.27",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "report_severity",
+   "expected": "SUCCESS",
+   "tx": "0x92ef6e9b...e82cff5d",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.28",
+   "phase": "2",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "adjudicate",
+   "expected": "SUCCESS",
+   "tx": "0xe4ed28fc...cef0d4bc",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.30",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "resolve_ratification",
+   "expected": "SUCCESS",
+   "tx": "0xd7d2fb96...805eda49",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.35",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "sweep_slashed",
+   "expected": "SUCCESS",
+   "tx": "0xac8eefee...4398ecd6",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "2.37",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "sweep_slashed",
+   "expected": "ERROR",
+   "tx": "0x1a8bf783...4f2ce94f",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "NOTHING_TO_SWEEP"
+  },
+  {
+   "step": "2.38",
+   "phase": "2",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "withdraw_bond",
+   "expected": "SUCCESS",
+   "tx": "0x83b15a53...005c534c",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "3.1",
+   "phase": "3",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "create_delegation",
+   "expected": "SUCCESS",
+   "tx": "0x5a303de8...331034e3",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "3.2",
+   "phase": "3",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "create_delegation",
+   "expected": "SUCCESS",
+   "tx": "0x9e42fd60...d3b4af4c",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "3.5",
+   "phase": "3",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "resolve_conflict",
+   "expected": "SUCCESS",
+   "tx": "0xc4123881...4067ea54",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "3.7",
+   "phase": "3",
+   "contract": "AuthorityLedger",
+   "signer": "B",
+   "method": "create_request",
+   "expected": "ERROR",
+   "tx": "0xddd8c5e8...3596feb5",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "BLOCKED_BY_UNRESOLVED_CONFLICT_WITH"
+  },
+  {
+   "step": "3.8",
+   "phase": "3",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "revoke_delegation",
+   "expected": "SUCCESS",
+   "tx": "0x1d006043...7308aae6",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "3.9",
+   "phase": "3",
+   "contract": "AuthorityLedger",
+   "signer": "B",
+   "method": "create_request",
+   "expected": "SUCCESS",
+   "tx": "0xc9ea2a6b...957470db",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.1",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "register_evidence",
+   "expected": "SUCCESS",
+   "tx": "0x1f0e3234...f674486e",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.2",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "verify_evidence",
+   "expected": "SUCCESS",
+   "tx": "0x5fa480d9...91cf8ca5",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.3",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "derive_assertion",
+   "expected": "SUCCESS",
+   "tx": "0x3a650aad...2bd6e4fe",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.4",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "derive_action",
+   "expected": "SUCCESS",
+   "tx": "0xad24c4dd...8a0816d5",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.13",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "poll",
+   "expected": "SUCCESS",
+   "tx": null,
+   "note": "no transaction found: step was not run"
+  },
+  {
+   "step": "4.15",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "request_revalidation",
+   "expected": "SUCCESS",
+   "tx": "0xb99eaf37...3dc8f6e4",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.16",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "revalidate",
+   "expected": "SUCCESS",
+   "tx": "0x3f04f2c7...d4fbb141",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.17",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "register_evidence",
+   "expected": "SUCCESS",
+   "tx": "0x1171dafa...cfa215f9",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.18",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "verify_evidence",
+   "expected": "SUCCESS",
+   "tx": "0x2e9738dd...fd7c9f81",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.19",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "derive_action",
+   "expected": "SUCCESS",
+   "tx": "0xac04e4ad...33a58d8e",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.21",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "execute_action",
+   "expected": "SUCCESS",
+   "tx": "0xb0591c7e...ee1b2715",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.23",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "execute_action",
+   "expected": "ERROR",
+   "tx": "0x72101fed...548b8f02",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "ALREADY_EXECUTED"
+  },
+  {
+   "step": "4.24",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "register_evidence",
+   "expected": "SUCCESS",
+   "tx": "0xf013efe3...eef6416c",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.25",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "verify_evidence",
+   "expected": "SUCCESS",
+   "tx": "0x3eb985af...1f5d04e2",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.26",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "revoke",
+   "expected": "SUCCESS",
+   "tx": "0x34eaebcc...cdec10d8",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.27",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "reclaim",
+   "expected": "SUCCESS",
+   "tx": "0x0b6a338f...16b681df",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.28",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "verify_evidence",
+   "expected": "SUCCESS",
+   "tx": "0x4895f57b...e29feefe",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "4.32",
+   "phase": "4",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "refresh_node",
+   "expected": "SUCCESS",
+   "tx": null,
+   "note": "no transaction found: step was not run"
+  },
+  {
+   "step": "5.1",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "register_judge",
+   "expected": "SUCCESS",
+   "tx": "0x7654fe11...500d503a",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "5.2",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "add_golden",
+   "expected": "SUCCESS",
+   "tx": "0x2341d7b9...a11fd6fb",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "5.3",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "add_golden",
+   "expected": "SUCCESS",
+   "tx": "0xd9efd7fd...e01d6ff0",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "5.4",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "add_golden",
+   "expected": "SUCCESS",
+   "tx": "0xdbce155b...73a52486",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "5.5",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "propose_version",
+   "expected": "SUCCESS",
+   "tx": "0xc726d96e...73886ef4",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "5.6",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "run_case",
+   "expected": "SUCCESS",
+   "tx": "0xf059f19f...712f66b4",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "5.7",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "run_case",
+   "expected": "SUCCESS",
+   "tx": "0x4f992116...b196e4f6",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "5.8",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "run_case",
+   "expected": "SUCCESS",
+   "tx": "0x3021a30c...27dfbb3f",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "5.9",
+   "phase": "5",
+   "contract": "ContinuityCore",
+   "signer": "O",
+   "method": "activate_version",
+   "expected": "SUCCESS",
+   "tx": "0x5a370cfc...46a61f24",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "6.1",
+   "phase": "6",
+   "contract": "AuthorityLedger",
+   "signer": "X",
+   "method": "create_delegation",
+   "expected": "ERROR",
+   "tx": null,
+   "note": "no transaction found: step was not run"
+  },
+  {
+   "step": "6.2",
+   "phase": "6",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "create_delegation",
+   "expected": "SUCCESS",
+   "tx": "0xadee44d6...6b2bee6f",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "6.3",
+   "phase": "6",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "redelegate",
+   "expected": "ERROR",
+   "tx": "0x0f952f7d...e9bc6e71",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "CHILD_INTENT_MUST_MATCH_PARENT"
+  },
+  {
+   "step": "6.4",
+   "phase": "6",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request",
+   "expected": "SUCCESS",
+   "tx": "0x810d0cd4...5c8e28ce",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "6.5",
+   "phase": "6",
+   "contract": "ProtectedProtocol",
+   "signer": "O",
+   "method": "report_severity",
+   "expected": "SUCCESS",
+   "tx": "0x62674391...bba9e838",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "6.6",
+   "phase": "6",
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "adjudicate",
+   "expected": "SUCCESS",
+   "tx": "0xcb023407...6ebed4e6",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "6.7",
+   "phase": "6",
+   "contract": "ProtectedProtocol",
+   "signer": "A",
+   "method": "pause_via_verdict",
+   "expected": "ERROR",
+   "tx": "0x75fbf884...b8b05ef3",
+   "actual": "ERROR",
+   "agrees": true,
+   "reason": "not captured",
+   "expected_reason": "SCOPE_NOT_ACCEPTED"
+  },
+  {
+   "step": "6.8",
+   "phase": "6",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "disable_capability",
+   "expected": "SUCCESS",
+   "tx": "0xc50c4172...d17b3230",
+   "actual": "SUCCESS",
+   "agrees": true
+  },
+  {
+   "step": "6.10",
+   "phase": "6",
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "enable_capability",
+   "expected": "SUCCESS",
+   "tx": "0x231c2522...9a73d255",
+   "actual": "SUCCESS",
+   "agrees": true
+  }
+ ],
+ "operator_mistakes": [
+  {
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_delegation",
+   "result": "ERROR",
+   "tx": "0xfafdbe01...f51db493",
+   "reason": null,
+   "note": "create_delegation signed by A, who is not an allowed grantor. Consistent with GRANTOR_NOT_ALLOWED, reason not captured"
+  },
+  {
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "redelegate",
+   "result": "SUCCESS",
+   "tx": "0x4e035d74...e38c4efc",
+   "reason": null,
+   "note": "first redelegate of the chain delegation, its child id was not used afterwards"
+  },
+  {
+   "contract": "AuthorityLedger",
+   "signer": "B",
+   "method": "create_request",
+   "result": "ERROR",
+   "tx": "0x16085f5747b18f0a1601969be92c1bdb0c3d3e4dc2d05c5bd65eb55c2427ad2f",
+   "reason": "NOT_DELEGATE",
+   "note": "create_request with the parent delegation id instead of the child id"
+  },
+  {
+   "contract": "AuthorityLedger",
+   "signer": "B",
+   "method": "create_request",
+   "result": "ERROR",
+   "tx": "0x062f6a17632647ccdcdac5ef7d48ed069a763a8bb8306a1ab6b81c8a471d14b6",
+   "reason": "NOT_DELEGATE",
+   "note": "same mistake again"
+  },
+  {
+   "contract": "AuthorityLedger",
+   "signer": "O",
+   "method": "revoke_delegation",
+   "result": "ERROR",
+   "tx": "0x904de81f...d628f94d",
+   "reason": null,
+   "note": "revoke_delegation reverted once before the successful one, reason not captured"
+  },
+  {
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_request",
+   "result": "ERROR",
+   "tx": "0xdb8ca3b51e3f03b7cfb7cda8603b6f600157dd38bc19ff705954aa663eddfa43",
+   "reason": "CAPABILITY_OR_SCOPE_MISMATCH",
+   "note": "create_request with scope audit-committee on a delegation that had been created with scope audit-chain"
+  },
+  {
+   "contract": "AuthorityLedger",
+   "signer": "A",
+   "method": "create_delegation",
+   "result": "ERROR",
+   "tx": "0x4b4e945d...2ef9ce49",
+   "reason": null,
+   "note": "create_delegation signed by A, who is not an allowed grantor. Consistent with GRANTOR_NOT_ALLOWED, reason not captured"
+  }
+ ],
+ "reverts": [
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0x0b36ecc0f4d6186a565212ce09df9961f49f5ffc10fdaaa428125db813029d9b",
+   "signer": "A",
+   "method": "redelegate",
+   "step": "1.7",
+   "reason": "LIMITED_NOT_REDELEGABLE",
+   "confirmed": true
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0xfafdbe01...f51db493",
+   "signer": "A",
+   "method": "create_delegation",
+   "step": null,
+   "reason": "unknown",
+   "confirmed": false
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0x16085f5747b18f0a1601969be92c1bdb0c3d3e4dc2d05c5bd65eb55c2427ad2f",
+   "signer": "B",
+   "method": "create_request",
+   "step": null,
+   "reason": "NOT_DELEGATE",
+   "confirmed": true
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0x062f6a17632647ccdcdac5ef7d48ed069a763a8bb8306a1ab6b81c8a471d14b6",
+   "signer": "B",
+   "method": "create_request",
+   "step": null,
+   "reason": "NOT_DELEGATE",
+   "confirmed": true
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0x904de81f...d628f94d",
+   "signer": "O",
+   "method": "revoke_delegation",
+   "step": null,
+   "reason": "unknown",
+   "confirmed": false
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0xa0542966d07ae6992182b8317b788bf01284f359c5e3c3d83ffd0e2ebbc8bc58",
+   "signer": "B",
+   "method": "create_request",
+   "step": "1.15",
+   "reason": "DELEGATION_REVOKED",
+   "confirmed": true
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0xbbd5ee35...e514d863",
+   "signer": "A",
+   "method": "create_request",
+   "step": "1.19",
+   "reason": "APPROVALS_PENDING",
+   "confirmed": false
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0xdb8ca3b51e3f03b7cfb7cda8603b6f600157dd38bc19ff705954aa663eddfa43",
+   "signer": "A",
+   "method": "create_request",
+   "step": null,
+   "reason": "CAPABILITY_OR_SCOPE_MISMATCH",
+   "confirmed": true
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0x4b4e945d...2ef9ce49",
+   "signer": "A",
+   "method": "create_delegation",
+   "step": null,
+   "reason": "unknown",
+   "confirmed": false
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0xba7df583...5ae7a510",
+   "signer": "O",
+   "method": "set_capability_assurance",
+   "step": "1.31",
+   "reason": "ASSURANCE_CAN_ONLY_INCREASE",
+   "confirmed": false
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0xddd8c5e8...3596feb5",
+   "signer": "B",
+   "method": "create_request",
+   "step": "3.7",
+   "reason": "BLOCKED_BY_UNRESOLVED_CONFLICT_WITH",
+   "confirmed": false
+  },
+  {
+   "contract": "AuthorityLedger",
+   "tx": "0x0f952f7d...e9bc6e71",
+   "signer": "A",
+   "method": "redelegate",
+   "step": "6.3",
+   "reason": "CHILD_INTENT_MUST_MATCH_PARENT",
+   "confirmed": false
+  },
+  {
+   "contract": "ProtectedProtocol",
+   "tx": "0x688a26dc...1ba50236",
+   "signer": "A",
+   "method": "propose_critical_threshold_change",
+   "step": "2.19",
+   "reason": "NOT_IN_SCOPE",
+   "confirmed": false
+  },
+  {
+   "contract": "ProtectedProtocol",
+   "tx": "0xfdfb058e...5d6155fb",
+   "signer": "A",
+   "method": "withdraw_bond",
+   "step": "2.26",
+   "reason": "BOND_LOCKED_BY_UNRESOLVED_PROPOSAL",
+   "confirmed": false
+  },
+  {
+   "contract": "ProtectedProtocol",
+   "tx": "0x1a8bf783...4f2ce94f",
+   "signer": "O",
+   "method": "sweep_slashed",
+   "step": "2.37",
+   "reason": "NOTHING_TO_SWEEP",
+   "confirmed": false
+  },
+  {
+   "contract": "ProtectedProtocol",
+   "tx": "0x75fbf884...b8b05ef3",
+   "signer": "A",
+   "method": "pause_via_verdict",
+   "step": "6.7",
+   "reason": "SCOPE_NOT_ACCEPTED",
+   "confirmed": false
+  },
+  {
+   "contract": "ContinuityCore",
+   "tx": "0x72101fed...548b8f02",
+   "signer": "O",
+   "method": "execute_action",
+   "step": "4.23",
+   "reason": "ALREADY_EXECUTED",
+   "confirmed": false
+  }
+ ],
+ "reads_captured": [
+  {
+   "step": "1.2",
+   "result": "LOG_NOTE assurance_level 0, builtin capabilities show assurance levels 1 and 2, all with a disabled field set to false (proof that the hardened Ledger was deployed)"
+  },
+  {
+   "step": "1.23",
+   "result": "get_delegation approvals_count 2, approvals_required 2, root_grantor equals O"
+  },
+  {
+   "step": "1.25",
+   "result": "get_request status CANCELLED"
+  },
+  {
+   "step": "1.26",
+   "result": "list_requests_of_delegation returned one request id"
+  },
+  {
+   "step": "1.27",
+   "result": "list_delegations_of_delegate for A returned three delegations"
+  },
+  {
+   "step": "1.28",
+   "result": "list_delegations_of_scope audit-notes returned the first delegation"
+  }
+ ],
+ "deviations_from_the_runbook": [
+  "The committee delegation of step 1.17 was created with scope audit-chain instead of audit-committee (a stale field in the Studio form). It worked as intended because the later requests used its real scope.",
+  "Steps 1.6, 2.7, 4.13, 4.32 and 6.1 were not run.",
+  "Seven extra transactions were sent on the Ledger because of wrong ids, wrong signers or stale fields (listed under operator_mistakes)."
+ ],
+ "on_chain_evidence_for_fixes": [
+  {
+   "id": "F1",
+   "status": "not confirmed",
+   "evidence": "Step 6.1 (stranger X) was not run. Two reverted create_delegation calls signed by A fit GRANTOR_NOT_ALLOWED, but no reason string was captured."
+  },
+  {
+   "id": "F2",
+   "status": "not confirmed",
+   "evidence": "Step 6.3 reverted as expected, the reason string was not captured."
+  },
+  {
+   "id": "F9",
+   "status": "not confirmed",
+   "evidence": "Step 6.7 (pause_via_verdict) reverted as expected, the reason string was not captured. The deployed Protocol had exactly one accepted scope, guardian-quorum."
+  },
+  {
+   "id": "F1 kill switch",
+   "status": "partly confirmed",
+   "evidence": "disable_capability and enable_capability both succeeded (6.8, 6.10). The read that shows the effect (6.9) was not captured."
+  },
+  {
+   "id": "F5",
+   "status": "positive path confirmed",
+   "evidence": "link_ratification_request and resolve_ratification succeeded with the new rules and the slash of 0.1 GEN reached B. The negative checks were not run on chain."
+  },
+  {
+   "id": "F6 and K1",
+   "status": "normal path confirmed",
+   "evidence": "withdraw_bond succeeded after resolve_ratification on a fresh deployment (explorer transfer to A). The timeout, link after one hour and stale proposal paths were not run."
+  },
+  {
+   "id": "F3",
+   "status": "not testable on chain",
+   "evidence": "The removed methods simply no longer exist. Covered by offline tests."
+  },
+  {
+   "id": "F12",
+   "status": "partly confirmed",
+   "evidence": "All adjudications used valid_seconds 3600 and succeeded. The rejection of 3601 was not run."
+  },
+  {
+   "id": "F13",
+   "status": "positive path confirmed",
+   "evidence": "propose_version, three run_case calls and activate_version succeeded with the standard prompt and two labels."
+  },
+  {
+   "id": "F7, F8, F10, F11, F14, F15",
+   "status": "not exercised on chain",
+   "evidence": "Offline tests only. The owner only operations of F14 (revalidate, request_revalidation) ran successfully as part of phase 4."
+  }
+ ],
+ "not_verified": [
+  "Reason strings of 12 of the 17 reverts (see reverts, confirmed false)",
+  "Most read results (39 of 45 reads have no captured result)",
+  "The negative checks of F1, F2 and F9 by reason",
+  "Timeout, delay and cap paths of the hardening (offline tests only)",
+  "A stranger account X (step 6.1)",
+  "tests/run.mjs against a network",
+  "Public testnet behavior"
+ ],
+ "runbook_lessons_applied": [
+  "NOT_DELEGATE on a child request means the parent id was used. The id to use is the one redelegate returned.",
+  "CAPABILITY_OR_SCOPE_MISMATCH means the delegation was created with another scope. Read it with get_delegation.",
+  "Studio keeps old values in the form fields. Check every field before sending."
+ ]
+}

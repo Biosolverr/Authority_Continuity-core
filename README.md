@@ -1,173 +1,107 @@
-# Continuity Core
+# Authority Trio
 
-Trust in on-chain state expires. Continuity Core makes that explicit for two things that most
-systems trust forever: **facts** ("the supplier is licensed") and **LLM judges** ("the AI checker
-approves this payment"). Both are put on a lease. When a lease lapses, everything built on it is
-blocked until the basis is re-checked by GenLayer validators.
+Three GenLayer Intelligent Contracts that decide **who may do what, when, and on which evidence**, using LLM validators for the parts that need judgment and plain deterministic code for everything else.
 
-One Intelligent Contract, one shared lease state machine, one dependency graph.
-
-```
-EVIDENCE lease  ----\
-                     >---  ASSERTION  ---  ACTION   (executes only if every ancestor lease is live)
-JUDGE lease     ----/
-```
-
-## The problem
-
-* A fact verified once is treated as true forever. Licenses are revoked, pages change, sources
-  disappear.
-* An LLM judge is treated as a constant. In practice its behavior is defined by a prompt that can be
-  swapped, and by models that drift.
-* Deterministic code can check `block.timestamp > expires_at`. It cannot decide that "the new version
-  of the document still supports the old claim", or that "this new prompt still behaves like the old
-  one". Those are semantic questions.
-
-## How it works
-
-### Two branches, one lifecycle
-
-| | EVIDENCE branch | JUDGE branch |
+| Contract | Version | Role |
 |---|---|---|
-| What is leased | A claim about a web source | The active prompt version of an LLM adjudicator |
-| Entering the lease | `verify_evidence`: validators compare claim to source | `activate_version`: every golden case passed, results fresh |
-| Renewing | `revalidate`: `SAME` / `CHANGED` / `CONTRADICTED` | `run_case` for every golden once per cycle, then `finalize_recert` |
-| Failure | `CHANGED` or no decision: `EXPIRED`; `CONTRADICTED`: `INVALIDATED` | Any golden fails: `EXPIRED` with verdict `DRIFTED` |
-| Consensus compares | Verdict bucket | Label from a closed enum |
+| `AuthorityLedger` | v0.5.0 | Registry of delegations, requests, AI verdicts and appeals. Any target system asks it one question: `check_authority`. |
+| `ProtectedProtocol` | v0.4.0 | Demo target. Pauses itself on a verdict, runs a bonded guardian fast path with slashing, and guards a critical action with two independent controls. |
+| `ContinuityCore` | v0.4.0 | Verified facts with expiry (evidence leases), a dependency graph of assertions and actions, and AI judges whose prompt versions must pass golden cases. |
 
-Lease states: `UNVERIFIED`, `VERIFIED`, `ACTIVE`, `EXPIRING`, `EXPIRED`, `REVALIDATION_PENDING`,
-`REVALIDATED`, `INVALIDATED`. Time moves a lease to `EXPIRING` and `EXPIRED`; revalidation is
-fail-closed (`REVALIDATION_PENDING` is not a live state).
+## Status, stated plainly
 
-### Dependency graph
+- **Experimental. Not audited.** Do not hold real value in these contracts.
+- The previous versions (Ledger v0.4.0, Protocol v0.3.1, ContinuityCore v0.3.0) were tested by hand on **GenLayer Studio** between 2026-10-12 and 2026-10-17: about 116 transactions, 21 of them reverts. Nothing ran on a public testnet.
+- A hostile review of those versions found 3 critical and 9 major issues. This release fixes or mitigates all of them (see [SECURITY.md](SECURITY.md) and [CHANGELOG.md](CHANGELOG.md)).
+- **The hardened versions were verified offline and in part on Studio.** Offline: 27 unit tests and 142 scenario steps on a stand-in for GenVM. On Studio (deployed 2026-10-20): 92 of the 97 write steps of the scenarios ran, every one with the expected success or revert, 104 explorer rows, 17 reverts. Only 5 of the 17 revert reasons were captured, and 39 of 45 read results were not, so several negative checks (F1, F2, F9) reverted as expected but are not confirmed by reason. Details: [tests/results/studio-run-2-hardened.json](tests/results/studio-run-2-hardened.json).
+- AI outcomes depend on the validator LLM set and are not bit for bit reproducible.
 
-`derive_assertion` and `derive_action` create nodes over one or more leases. A derived node is
-trusted only if all ancestors are live. The graph is a DAG by construction (parents must already
-exist and cannot be edited), with at most 8 parents per node and depth 16.
-
-**Enforcement is pull-based.** `execute_action` recomputes trust from the leases and the current
-time. The stored state of derived nodes is only a cache that anyone can refresh with
-`refresh_node`. No write path iterates over dependents, so dependents can never block the lease they
-depend on.
-
-### The regression gate (judge branch)
-
-An owner registers a judge slot with a closed label enum and appends **golden cases** (input and
-expected label). Goldens are append-only: they can be added, never edited or removed. A new prompt
-version can only become active if validators executed it on every golden and every result is `PASS`
-and recent. The gate can only block. It never grants authority the owner did not already have.
-
-Anti-gaming rules: at least 3 goldens, a golden input may not appear verbatim in a prompt, one run
-per case per recertification cycle, 300 second cooldown between attempts.
-
-### Why GenLayer
-
-The probes are semantic and need independent execution: comparing a claim with a changing page, and
-running a prompt on a case. A hash diff can only say "changed", and a single trusted oracle puts all
-trust in its operator. Validators with different models re-execute each probe and only a majority
-verdict is accepted. Everything else (state machine, graph, gate, freshness) is deterministic code.
-
-## Verified behavior
-
-* 47 direct-mode tests (mocked web and LLM): `tests/direct/test_continuity_core.py`.
-* A mutation check broke twelve protections one at a time (enforcement off, activation ignoring
-  failed or stale cases, repeated runs in a cycle, `reclaim` with dependents, both validators
-  accepting everything, `max_age`, drift undetected, vacuous suites, overfit check, and others).
-  The suite caught all twelve.
-* Live GenLayer Studio run with a heterogeneous validator set: see `proof.json` for 60 transaction
-  hashes and the observations from read calls. Covered live: lease expiry and revalidation (`SAME`),
-  source change to `CONTRADICTED`, judge activation and recertification, stale-result guard,
-  regressed prompt blocked (`CASE_FAILED`), judge drift (`DRIFTED`), replacement by a good version
-  (`SUPERSEDED`), action blocked by either lapsed lease and unblocked after revalidation, `reclaim`
-  refused with dependents.
-* Stability sample on a second judge (JD-6): four clear-cut cases, one of them a prompt-injection
-  input. All four were accepted in the first consensus round with 12 visible `Agree` votes and no
-  visible `Disagree`. Studio lists only validators that finished before quorum, so these are lower
-  bounds on participation. A paraphrased evidence claim, by contrast, needed up to three rounds.
-
-## Known limitations
-
-Read these before relying on the contract. More detail in `SECURITY.md`.
-
-1. The source is the trust root. The contract establishes "source S says C at time T", not that C is
-   true.
-2. Edges of the graph are declared by the node owner. The contract does not verify that an assertion
-   really follows from its parents.
-3. Goldens are owner-authored. A prompt can pass every golden and still misbehave elsewhere. A larger
-   suite lowers the risk, it does not remove it.
-4. The gate is only as strong as the validator majority. In the live run a deliberately harmful
-   prompt was followed by three of four responding validators; one disagreed.
-5. LLM variance costs liveness. A paraphrased claim needed three consensus rounds once and one round
-   another time; clear cases were accepted in the first round.
-6. `EXECUTED` is irreversible. There is no dispute or hold window.
-7. Prompt injection from source text is mitigated by prompt instructions only.
-8. The live sample is small (two judges with up to four goldens each, a few dozen consensus runs). The `CHANGED`
-   verdict, dishonest leaders and dishonest validators are covered by mocks only.
-9. The gate observes behavior on goldens, not the intent of a prompt. A prompt that tells the model to
-   follow any instructions in the request still passed the prompt-injection golden, because the
-   validating models resisted the injection on their own. Only what goldens exercise is guarded.
-
-## Quick start
-
-### Deploy
-
-The first two lines of the contract are the runner header and must stay exactly as they are:
+## How the pieces fit
 
 ```
-# v0.3.0
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+ grantor ──create_delegation──> AuthorityLedger <──can_execute── ContinuityCore
+                                   │   ▲                          (facts, gates)
+        delegate ──create_request──┘   │ check_authority (view)
+                  ──adjudicate (LLM)───┤
+                                       ▼
+                               ProtectedProtocol  (re-checks authority at execution,
+                                                   keeps its own replay protection)
 ```
 
-The contract failed to load in Studio ("invalid_contract") until the header matched this form. The
-exact trigger was not isolated. Paste `contracts/continuity_core.py` into GenLayer Studio and deploy
-with no constructor arguments.
+1. An owner approved grantor delegates a capability (for example `PAUSE_PROTOCOL`) to a delegate, with an intent text fixed by its hash. A redelegated child keeps the same intent.
+2. The delegate files a request. Validators run an LLM over the intent, the justification and, for critical actions, the **exact action text**. The verdict is `IN_SCOPE`, `OUT_OF_SCOPE` or `INCONCLUSIVE`.
+3. The target calls `check_authority` (a read only view) and applies its own deterministic rules: replay protection, accepted scope, trusted root grantor, guardian quorum.
+4. Optional gates: a request can rest on an action node in `ContinuityCore`. The Ledger asks `can_execute` again on every check, so an expired fact closes the gate without any AI call.
 
-### Walkthrough
+Design rules that hold in the code: the owner can only raise a capability's consequence class and only switch gates on, never off; an expired or revoked parent invalidates its whole delegation chain; uncertainty never silently approves (strict mode treats doubt as refusal).
 
-```
-register_evidence(claim, source_url, ttl_seconds)      -> EV-n
-verify_evidence(EV-n)                                  -> ACTIVE
+## What was verified on Studio
 
-register_judge(description, ["ALLOW","DENY"], ttl)     -> JD-n
-add_golden(JD-n, input_text, expected_label)           (at least 3)
-propose_version(JD-n, "... {input}")                   -> version number
-run_case(JD-n, version, case_idx)                      (every case, then within one hour:)
-activate_version(JD-n, version)
+Phases 1 to 5 of the first [runbook](tests/RUNBOOK.md) were run on the previous versions: delegation limits, cascade revoke, committee approvals, cancel and audit reads, the routine class without any AI call, the critical threshold change (IN_SCOPE then two approvals), an out of scope refusal, emergency pause with ratification refusal, slashing and the sweep to the recipient, authority conflict detection and blocking, the full evidence lease cycle (verify, expire, revalidate, revoke, reclaim, execute), and a judge activated by three golden cases.
 
-derive_action(description, [EV-n, JD-n], max_age_s)    -> AC-n
-execute_action(AC-n)                                   reverts with ACTION_BLOCKED_BY:<lease> if any
-                                                       ancestor lease has lapsed
-```
+Run 2 repeated phases 0 to 6 on the hardened versions. 92 of the 97 write steps have a matching transaction and all 92 ended as expected, including the refusal flows, the slash and sweep, the conflict block, the evidence lifecycle and the judge activation. Not run: steps 1.6, 2.7, 4.13, 4.32 and 6.1. The explorer shows two native transfers and a Protocol balance of 0.80 GEN, which matches the bond accounting.
 
-After a lease expires: `request_revalidation`, then `revalidate` (evidence) or `run_case` for each
-golden followed by `finalize_recert` (judge). Consumers that read a prompt must use
-`get_active_prompt` and check `live`.
+Machine readable records: [run 1](tests/results/studio-run-1-previous-versions.json), [run 2](tests/results/studio-run-2-hardened.json).
 
-### Tests
+## What we found, and where it stands
 
-```
-pip install genlayer-test pytest
-pytest tests/direct/test_continuity_core.py -q
-```
+A hostile review found 3 critical and 9 major issues in the first versions. Only K1 and K2 were observed on chain, the rest are code review results (the URL filter bypass was reproduced offline).
 
-Notes:
+| ID | Severity | What | Now |
+|---|---|---|---|
+| F1 | CRITICAL | The root grantor is not authenticated, and the owner has no kill switch | FIXED |
+| F2 | CRITICAL | Redelegation lets the delegate replace the grantor's intent | FIXED |
+| F3 | CRITICAL | A plain guardian vote bypasses the critical threshold control | FIXED |
+| F4 | MAJOR | The conflict check can be used to block anyone's new requests | MITIGATED |
+| F5 | MAJOR | A ratification verdict is not bound to the pause, and it judges a story, not facts | MITIGATED |
+| F6 | MAJOR | A pause can become unresolvable, and a bond can stay locked | FIXED |
+| F7 | MAJOR | Gates prove freshness, not relevance, and anyone can build on anyone's evidence | MITIGATED |
+| F8 | MAJOR | Evidence fetching: filter bypass, hidden text, delimiter breakout | MITIGATED |
+| F9 | MAJOR | Capability grants are global across targets | PARTLY FIXED |
+| F10 | MAJOR | Unbounded growth and linear scans | MITIGATED |
+| F11 | MAJOR | Single owner key and one way setters | PARTLY FIXED |
+| K1 | MINOR | Bond locked by an old unresolved pause | FIXED |
+| K2 | MINOR | Storage read inside a non-deterministic block | FIXED |
+| C1 | MAJOR | The web console keeps a private key in the browser | PARTLY FIXED |
 
-* Direct mode freezes `gl.message_raw["datetime"]` when the contract class is loaded, so the test
-  helper `warp()` updates it as well. On a real network that field is the transaction time.
-* Windows: `gltest` calls `os.unlink` on a temp file that is still open. Run
-  `python scripts/patch_gltest_windows.py` once.
-* If the SDK download returns 404, place `genvm-universal-v0.2.12.tar.xz` from the `genlayerlabs/genvm`
-  releases into `~/.cache/gltest-direct/`.
-* Direct mode does not build the contract schema. Redeploy in Studio after changing the contract.
+Statuses: FIXED means the hole is closed in code. MITIGATED and PARTLY FIXED leave a stated residual risk, listed in [SECURITY.md](SECURITY.md). Verification is offline for all of them. On chain, only the positive paths of F5, F6 and F13 were seen working, and the F1, F2 and F9 reverts are unconfirmed by reason (see the results file).
+
+## Results at a glance
+
+| Run | Contracts | Rows | Reverts | Notes |
+|---|---|---|---|---|
+| 1, 2026-10-12 to 10-17 | Ledger v0.4.0, Protocol v0.3.1, ContinuityCore v0.3.0 | 116 | 21 | Found a leftover pause that kept a bond locked (K1) |
+| 2, 2026-10-20 | Ledger v0.5.0, Protocol v0.4.0, ContinuityCore v0.4.0 | 104 | 17 | 92 of 97 write steps ran as expected. The bond was withdrawn after the pause was resolved. Protocol balance 0.80 GEN matches the bond accounting |
+
+Files: [run 1](tests/results/studio-run-1-previous-versions.json), [run 2](tests/results/studio-run-2-hardened.json).
+
+## Weak points that remain
+
+- **Trust is still centralized.** One owner key per contract, no timelock on most owner actions. Use a multisig address as owner.
+- **The AI is a judge, not a proof.** It judges the stated justification, not the facts. Prompt injection is reduced by fencing, not excluded. The appeal path was never exercised on chain.
+- **Time makes the workflow fragile.** Severity snapshots live 10 minutes, verdicts one hour, evidence leases can be 60 seconds, ContinuityCore enforces a 5 minute cooldown.
+- **Testing is thin.** One network, one operator, run by hand. The Node runner `tests/run.mjs` has never run against a network, and five scenario steps were skipped (1.6, 2.7, 4.13, 4.32, 6.1).
+- **Gates prove freshness, not relevance,** and the URL filter cannot see DNS resolution.
+- **Many failure reasons were never captured** (9 of 21 reverts in the first run, 12 of 17 in the second, marked `confirmed: false`). Studio keeps old values in its form fields, which caused seven mistaken transactions in the second run.
 
 ## Repository layout
 
 ```
-contracts/continuity_core.py        the Intelligent Contract
-tests/direct/test_continuity_core.py direct-mode suite (47 cases)
-scripts/patch_gltest_windows.py     Windows fix for gltest direct mode
-proof.json                          live Studio transactions and observations
-SECURITY.md                         trust assumptions and threat model
+contracts/    authority_ledger.py  protected_protocol.py  continuity_core.py
+console/      index.html  vercel.json      (static web console, 118 methods)
+tests/        scenarios.json  RUNBOOK.md  run.mjs  lib.mjs  offline/  results/ (two Studio runs)  tools/
+.github/      workflows/offline.yml          (runs the offline checks on every push)
+CHANGELOG.md  what changed in the hardening release, including breaking changes
+DEPLOY.md     deployment and wiring
+SECURITY.md   trust model, findings, reporting
 ```
-g README.md…]()
-# Continuity-core
+
+## Quick start
+
+1. Read [DEPLOY.md](DEPLOY.md) and deploy in the documented order.
+2. Offline first: `cd tests/offline && python3 -m unittest && python3 run_scenarios.py`. Then on a network: `cd tests && npm install && npm run plan`, then `npm run test:fast` (phases 0 and 1, no AI calls).
+3. Follow [tests/RUNBOOK.md](tests/RUNBOOK.md) by hand if you prefer Studio.
+
+## License
+
+No license file is included, so by default all rights are reserved. Add a `LICENSE` file before you make the repository public.

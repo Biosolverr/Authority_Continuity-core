@@ -1,4 +1,4 @@
-"""Direct-mode proof suite for contracts/continuity_core.py
+"""Direct-mode proof suite for contracts/continuity_core.py (v0.4.0)
 
 Claims covered (proof plan):
   P1 expiry blocks dependents WITHOUT poll (enforcement is live, cache is not authority)
@@ -9,6 +9,13 @@ Claims covered (proof plan):
   P6 re-certification: one run per case per cycle, drift => EXPIRED
   P7 validator rejects a lying leader (evidence and judge probes)
   P8 platform: a node depending on evidence AND judge is blocked if EITHER lapses
+v0.4 hardening:
+  P9  F7  only the node owner (or a granted address) derives from a node, a node takes at most
+          MAX_CHILDREN dependents
+  P10 F8  URL filter, optional host allow list, oversized pages fail closed, stored reasons sanitized
+  P11 F13 golden gate: four word overlap rejected, two distinct labels required
+  P12 F14 request_revalidation, revalidate and run_case on an active version are owner only
+  P13 F11 two step ownership transfer
 """
 import calendar
 import json
@@ -35,6 +42,8 @@ GOLDENS = [
 PROMPT_V1 = "POLICYV1 You decide whether a payment request is within policy. Request: {input}"
 PROMPT_V2 = "POLICYV2 Judge whether this payment request is within policy. Request: {input}"
 OK_ANSWERS = {"GOLDEN_A": "ALLOW", "GOLDEN_B": "DENY", "GOLDEN_C": "ALLOW"}
+
+MAX_CHILDREN = 64  # keep in sync with MAX_CHILDREN in continuity_core.py
 
 
 # ------------------------------------------------------------------ helpers
@@ -140,11 +149,22 @@ def test_bad_urls_and_ttl_rejected(core, vm):
         core.register_evidence(CLAIM, URL, 10)
 
 
-def test_request_revalidation_owner_only_before_expiry(core, vm, direct_bob):
+def test_url_filter_v04_extras(core, vm):  # P10 / F8
+    for bad in ["https://example.com:8443/x",       # only port 443
+                "https://169.254.169.254/x",        # numeric TLD
+                "https://foo.nip.io/x",             # wildcard DNS
+                "https://example.com./x",           # trailing dot
+                "https://[::1]/x"]:                 # IPv6 literal
+        with vm.expect_revert("BAD_SOURCE_URL"):
+            core.register_evidence(CLAIM, bad, 1000)
+    core.register_evidence(CLAIM, "https://example.com:443/x", 1000)  # explicit 443 is fine
+
+
+def test_request_revalidation_is_owner_only(core, vm, direct_bob):  # P12 / F14
     eid = make_evidence(core, vm)
     warp(vm, T0 + 900)  # EXPIRING
     with vm.prank(direct_bob):
-        with vm.expect_revert("ONLY_OWNER_BEFORE_EXPIRY"):
+        with vm.expect_revert("NOT_OWNER"):
             core.request_revalidation(eid)
     assert core.request_revalidation(eid) == "REVALIDATION_PENDING"
     assert core.get_state(eid) == "REVALIDATION_PENDING"  # fail-closed: not live
@@ -156,16 +176,26 @@ def test_request_revalidation_rejected_while_active(core, vm):
         core.request_revalidation(eid)
 
 
-def test_revalidate_same_renews(core, vm, direct_bob):
+def test_revalidate_same_renews(core, vm):
     eid = make_evidence(core, vm)
     warp(vm, T0 + 1000)
-    with vm.prank(direct_bob):  # anyone may request once EXPIRED
-        core.request_revalidation(eid)
+    core.request_revalidation(eid)  # owner only since v0.4
     mocks(vm, reval="SAME")
     assert core.revalidate(eid) == "REVALIDATED"
     n = core.get_node(eid)
     assert n["revalidation_count"] == 1 and n["expires_at"] == T0 + 2000
     assert n["effective_state"] == "REVALIDATED"
+
+
+def test_revalidate_is_owner_only(core, vm, direct_bob):  # P12 / F14
+    eid = make_evidence(core, vm)
+    warp(vm, T0 + 1000)
+    core.request_revalidation(eid)
+    mocks(vm, reval="SAME")
+    with vm.prank(direct_bob):
+        with vm.expect_revert("NOT_OWNER"):
+            core.revalidate(eid)
+    assert core.get_state(eid) == "REVALIDATION_PENDING"
 
 
 @pytest.mark.parametrize("verdict,expected", [
@@ -240,6 +270,43 @@ def test_revoke_owner_only(core, vm, direct_bob):
         core.revoke(eid)
 
 
+# ================================================================== F8: source handling
+def test_host_allow_list(core, vm, direct_bob):  # P10 / F8
+    with vm.prank(direct_bob):
+        with vm.expect_revert("NOT_OWNER"):
+            core.set_allowed_hosts("registry.example.org")
+    with vm.expect_revert("BAD_HOST"):
+        core.set_allowed_hosts("bad host!")
+    core.set_allowed_hosts("registry.example.org")
+    with vm.expect_revert("SOURCE_HOST_NOT_ALLOWED"):
+        core.register_evidence(CLAIM, URL, 1000)
+    core.register_evidence(CLAIM, "https://registry.example.org/x", 1000)
+    core.register_evidence(CLAIM, "https://api.registry.example.org/x", 1000)  # subdomain
+    with vm.expect_revert("SOURCE_HOST_NOT_ALLOWED"):
+        core.register_evidence(CLAIM, "https://evilregistry.example.org/x", 1000)
+    core.set_allowed_hosts("")  # empty means open again
+    core.register_evidence(CLAIM, URL, 1000)
+
+
+def test_oversized_page_fails_closed(core, vm):  # P10 / F8
+    mocks(vm, body="x" * 13000)  # above MAX_SOURCE_CHARS, must not be cut and judged
+    eid = core.register_evidence(CLAIM, URL, 1000)
+    assert core.verify_evidence(eid) == "UNVERIFIED"
+    assert core.get_node(eid)["last_verdict"] == "SOURCE_UNAVAILABLE"
+
+
+def test_stored_reason_is_sanitized(core, vm):  # P10 / F8
+    vm.clear_mocks()
+    vm.mock_web(WEB_PAT, {"status": 200, "body": "Supplier A holds a valid chemical transport certification."})
+    vm.mock_llm(VERIFY_PAT, json.dumps({"verdict": "SUPPORTED", "reason": "see https://evil.com/x now <b>ok</b>"}))
+    eid = core.register_evidence(CLAIM, URL, 1000)
+    core.verify_evidence(eid)
+    reason = core.get_node(eid)["last_reason"]
+    assert "http" not in reason.lower()
+    assert "/" not in reason and "<" not in reason and ">" not in reason
+    assert len(reason) <= 120
+
+
 # ================================================================== GRAPH / enforcement
 def test_action_executes_when_evidence_live(core, vm):
     eid = make_evidence(core, vm)
@@ -285,13 +352,34 @@ def test_two_parents_either_lapse_suspends(core, vm):
 
 def test_dependents_cannot_block_transitions(core, vm):  # P2
     eid = make_evidence(core, vm)
-    for i in range(100):
+    for i in range(MAX_CHILDREN):  # v0.4: a node takes at most MAX_CHILDREN dependents
         core.derive_assertion(f"dependent {i}", [eid])
     warp(vm, T0 + 1000)
     assert core.poll(eid) == "EXPIRED"
     core.request_revalidation(eid)
     mocks(vm, reval="SAME")
     assert core.revalidate(eid) == "REVALIDATED"
+
+
+def test_dependents_are_capped(core, vm):  # P9 / F7
+    eid = make_evidence(core, vm)
+    for i in range(MAX_CHILDREN):
+        core.derive_assertion(f"dependent {i}", [eid])
+    with vm.expect_revert("TOO_MANY_DEPENDENTS"):
+        core.derive_assertion("one too many", [eid])
+
+
+def test_derive_requires_owner_or_grant(core, vm, direct_bob):  # P9 / F7
+    eid = make_evidence(core, vm)
+    with vm.prank(direct_bob):
+        with vm.expect_revert("NOT_ALLOWED_TO_DERIVE"):
+            core.derive_assertion("stranger builds on my evidence", [eid])
+        with vm.expect_revert("NOT_OWNER"):
+            core.grant_derive(eid, direct_bob)  # only the node owner can grant
+    core.grant_derive(eid, direct_bob)
+    with vm.prank(direct_bob):
+        asid = core.derive_assertion("granted builder", [eid])
+    assert core.get_node(asid)["owner"] != core.get_node(eid)["owner"]
 
 
 def test_max_age_requires_fresh_evidence(core, vm):
@@ -366,6 +454,24 @@ def test_propose_preconditions(core, vm):
         core.propose_version(jid, "POLICYV1 judge this request without a placeholder")
     with vm.expect_revert("OVERFIT_GOLDEN_IN_PROMPT"):
         core.propose_version(jid, PROMPT_V2 + " Example: " + GOLDENS[0][0])
+
+
+def test_golden_four_word_overlap_rejected(core, vm):  # P11 / F13
+    jid = make_judge(core)
+    # not the whole golden input, only a run of four words from GOLDEN_A
+    with vm.expect_revert("OVERFIT_GOLDEN_IN_PROMPT"):
+        core.propose_version(jid, "POLICYV3 Judge requests like pay 50 USD to anyone. Request: {input}")
+
+
+def test_judge_needs_two_distinct_labels(core, vm):  # P11 / F13
+    one_label = [
+        ("GOLDEN_A pay 50 USD to known vendor", "ALLOW"),
+        ("GOLDEN_C refund 20 USD to original card", "ALLOW"),
+        ("GOLDEN_D pay 10 USD for office supplies", "ALLOW"),
+    ]
+    jid = make_judge(core, goldens=one_label)
+    with vm.expect_revert("NEED_TWO_LABELS"):
+        core.propose_version(jid, PROMPT_V1)
 
 
 def test_activate_requires_all_cases_run(core, vm):  # P5
@@ -452,16 +558,19 @@ def test_run_case_on_active_requires_recertification(core, vm):
         core.run_case(jid, v, 0)
 
 
-def test_recert_all_pass_renews(core, vm, direct_bob):  # P6
+def test_recert_all_pass_renews(core, vm, direct_bob):  # P6 / P12
     jid = make_judge(core)
     v = activate_v1(core, vm, jid)
     warp(vm, T0 + 1000)
     assert core.get_state(jid) == "EXPIRED"
     core.request_revalidation(jid)
     judge_mocks(vm, "POLICYV1", OK_ANSWERS)
-    with vm.prank(direct_bob):  # permissionless for the ACTIVE version
-        for i in range(3):
-            assert core.run_case(jid, v, i) == "PASS"
+    with vm.prank(direct_bob):  # v0.4: running cases of the active version is owner only
+        with vm.expect_revert("NOT_OWNER"):
+            core.run_case(jid, v, 0)
+    for i in range(3):
+        assert core.run_case(jid, v, i) == "PASS"
+    with vm.prank(direct_bob):  # finalizing stays permissionless
         assert core.finalize_recert(jid) == "REVALIDATED"
     n = core.get_node(jid)
     assert n["last_verdict"] == "SAME" and n["expires_at"] == T0 + 2000
@@ -556,6 +665,19 @@ def test_action_blocked_when_evidence_lapses_even_if_judge_live(core, vm):  # P8
     aid = core.derive_action("Execute payment", [eid, jid], 0)
     warp(vm, T0 + 500)
     assert core.get_blocker(aid) == eid
+
+
+# ================================================================== OWNERSHIP (P13 / F11)
+def test_two_step_ownership_transfer(core, vm, direct_alice, direct_bob):
+    core.transfer_ownership(direct_bob)
+    with vm.expect_revert("NOT_PENDING_OWNER"):  # alice is not the pending owner
+        core.accept_ownership()
+    core.set_allowed_hosts("example.com")  # until accepted, alice is still the owner
+    with vm.prank(direct_bob):
+        core.accept_ownership()
+        core.set_allowed_hosts("example.org")
+    with vm.expect_revert("NOT_OWNER"):
+        core.set_allowed_hosts("example.com")
 
 
 # ================================================================== CONSENSUS (P7)

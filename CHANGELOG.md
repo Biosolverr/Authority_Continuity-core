@@ -1,12 +1,5 @@
 # Changelog
 
-## Repository maintenance (docs and tests only, contracts unchanged)
-
-- `tests/tools/build_scenarios.py` and `scenarios.json`: the metadata named the old contract versions (v0.4.0, v0.3.1, v0.3.0). It now names v0.5.0, v0.4.0, v0.4.0. Steps are unchanged (144).
-- DEPLOY: the console key note was out of date (the key stays in the tab by default).
-- README license line and SECURITY reporting line no longer carry placeholders.
-- Added `.gitignore` and `.github/workflows/offline.yml` (offline unit tests and scenarios on every push).
-
 ## Hardening release: AuthorityLedger v0.5.0, ProtectedProtocol v0.4.0, ContinuityCore v0.4.0
 
 Fixes the findings F1 to F15, K1, K2 and C1 of [SECURITY.md](SECURITY.md). The contracts are **not upgradeable and state is not migrated**: deploy new instances and wire them again (see [DEPLOY.md](DEPLOY.md)). Verified offline, and in part on Studio (2026-10-20, see `tests/results/studio-run-2-hardened.json`).

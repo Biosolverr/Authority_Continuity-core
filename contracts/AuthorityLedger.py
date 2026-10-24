@@ -1244,3 +1244,4 @@ class AuthorityLedger(gl.Contract):
                 flag = True
         self.precedent_index[key] = (history + "," + decision) if history else decision
         return flag
+      

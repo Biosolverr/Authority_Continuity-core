@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-CONTRACT = "contracts/continuity_core.py"
+CONTRACT = "contracts/ContinuityCore.py"
 T0 = calendar.timegm((2026, 10, 6, 10, 0, 0))
 
 URL = "https://example.com/registry/123"

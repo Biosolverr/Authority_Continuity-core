@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-CONTRACT = "contracts/protected_protocol.py"
+CONTRACT = "contracts/ProtectedProtocol.py"
 T0 = calendar.timegm((2026, 10, 6, 10, 0, 0))
 BOND = 10**17
 JUST = "Suspicious drain on the main pool"

@@ -1,4 +1,4 @@
-"""Direct-mode proof suite for contracts/continuity_core.py (v0.4.0)
+"""Direct-mode proof suite for contracts/continuity_core.py (v0.4.1)
 
 Claims covered (proof plan):
   P1 expiry blocks dependents WITHOUT poll (enforcement is live, cache is not authority)
@@ -16,6 +16,7 @@ v0.4 hardening:
   P11 F13 golden gate: four word overlap rejected, two distinct labels required
   P12 F14 request_revalidation, revalidate and run_case on an active version are owner only
   P13 F11 two step ownership transfer
+  P14 F20 verify_evidence is owner only
 """
 import calendar
 import json
@@ -24,7 +25,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-CONTRACT = "contracts/ContinuityCore.py"
+CONTRACT = "contracts/continuity_core.py"
 T0 = calendar.timegm((2026, 10, 6, 10, 0, 0))
 
 URL = "https://example.com/registry/123"
@@ -120,6 +121,16 @@ def test_verify_supported_becomes_active(core, vm):
     n = core.get_node(eid)
     assert n["stored_state"] == "ACTIVE" and n["expires_at"] == T0 + 1000
     assert n["last_verdict"] == "SUPPORTED"
+
+
+def test_verify_evidence_is_owner_only(core, vm, direct_bob):  # F20
+    mocks(vm)
+    eid = core.register_evidence(CLAIM, URL, 1000)
+    with vm.prank(direct_bob):
+        with vm.expect_revert("NOT_OWNER"):
+            core.verify_evidence(eid)
+    assert core.get_node(eid)["stored_state"] == "UNVERIFIED"  # the stranger changed nothing
+    assert core.verify_evidence(eid) == "ACTIVE"
 
 
 def test_verify_not_supported_stays_unverified(core, vm):

@@ -1,4 +1,4 @@
-"""Direct-mode suite for contracts/authority_ledger.py (v0.5.0)
+"""Direct-mode suite for contracts/authority_ledger.py (v0.5.1)
 
 Scope: everything the Ledger does on its own. Calls to the other two contracts are NOT routed in
 gltest direct mode, so these paths are covered elsewhere (offline stand-in and the Studio scenarios):
@@ -234,6 +234,16 @@ def test_is_delegation_valid(core, vm, direct_bob, direct_charlie):
     assert core.is_delegation_valid(did, direct_charlie, CAP, SCOPE) is False
     assert core.is_delegation_valid(did, direct_bob, CAP, "other") is False
     assert core.is_delegation_valid("nope", direct_bob, CAP, SCOPE) is False
+    core.disable_capability(CAP)  # L2: the view applies the same live checks as check_authority
+    assert core.is_delegation_valid(did, direct_bob, CAP, SCOPE) is False
+    core.enable_capability(CAP)
+    assert core.is_delegation_valid(did, direct_bob, CAP, SCOPE) is True
+    core.allow_root_grantor(CAP, direct_charlie)
+    with vm.prank(direct_charlie):
+        foreign = deleg(core, direct_bob)
+    assert core.is_delegation_valid(foreign, direct_bob, CAP, SCOPE) is True
+    core.disallow_root_grantor(CAP, direct_charlie)
+    assert core.is_delegation_valid(foreign, direct_bob, CAP, SCOPE) is False
     warp(vm, T0 + 10001)
     assert core.is_delegation_valid(did, direct_bob, CAP, SCOPE) is False
 

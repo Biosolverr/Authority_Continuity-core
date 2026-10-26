@@ -1,7 +1,7 @@
-# v0.5.0
+# v0.5.1
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 """
-AuthorityLedger v0.5.0: authority registry, AI adjudication, optional gates.
+AuthorityLedger v0.5.1: authority registry, AI adjudication, optional gates.
 
 v0.5 hardening (see SECURITY.md, findings F1 to F15):
   F1  Root grantors are authenticated: only the owner or an owner approved grantor (per capability)
@@ -20,6 +20,12 @@ v0.5 hardening (see SECURITY.md, findings F1 to F15):
   F14 Expired or cancelled requests refund a request limit slot, min_severity can be raised.
   F15 Untrusted texts are fenced and length limited in every prompt.
   K2  resolve_conflict copies stored fields into locals before the non-deterministic block.
+
+v0.5.1:
+  L1  The pure helpers are module level functions (GenVM lint E022: methods of a contract need self).
+  L2  is_delegation_valid applies the same live checks as check_authority for the capability (not disabled)
+      and the root grantor (still allowed), so an integrator cannot read True where check_authority denies.
+  L3  A cancelled or expired gated request releases its gate node, so the node can gate a new request.
 """
 from genlayer import *
 import hashlib
@@ -863,6 +869,8 @@ class AuthorityLedger(gl.Contract):
         if delegation_id not in self.delegations:
             return False
         d = self.delegations[delegation_id]
+        if self.capabilities[d.capability].disabled or not self._grantor_allowed(d.capability, d.root_grantor):
+            return False
         return (self._chain_problem(d, _now()) == "" and _coerce_address(actor) == d.delegate
                 and capability == d.capability and scope == d.scope)
 
@@ -875,6 +883,11 @@ class AuthorityLedger(gl.Contract):
             d = self.delegations[r.delegation_id]
             if int(d.requests_used) > 0:
                 d.requests_used = u32(int(d.requests_used) - 1)
+
+    def _release_gate(self, r: Request) -> None:
+        """L3: a request that can no longer be adjudicated gives its gate node back."""
+        if r.gate_action_id != "":
+            self.gate_binding[r.gate_action_id] = ""
 
     def _create_request(self, delegation_id: str, capability: str, scope: str, intent_hash: str,
                         justification_hash: str, ttl_seconds: int, params_hash: str, gate_id: str = "") -> str:
@@ -945,7 +958,7 @@ class AuthorityLedger(gl.Contract):
             raise gl.vm.UserError("BAD_GATE_ID")
         if delegation_id not in self.delegations:
             raise gl.vm.UserError("DELEGATION_NOT_FOUND")
-        if gate_action_id in self.gate_binding:
+        if gate_action_id in self.gate_binding and self.gate_binding[gate_action_id] != "":
             raise gl.vm.UserError("GATE_ALREADY_BOUND")
         try:
             node = gl.get_contract_at(self.continuity_address).view().get_node(gate_action_id)
@@ -970,6 +983,7 @@ class AuthorityLedger(gl.Contract):
             raise gl.vm.UserError("TERMINAL_ALREADY")
         r.status = STATUS_EXPIRED
         self._refund_slot(r)
+        self._release_gate(r)
 
     @gl.public.write
     def cancel_request(self, request_id: str) -> None:
@@ -982,6 +996,7 @@ class AuthorityLedger(gl.Contract):
             raise gl.vm.UserError("TERMINAL_ALREADY")
         r.status = STATUS_CANCELLED
         self._refund_slot(r)
+        self._release_gate(r)
 
     @gl.public.view
     def get_request(self, request_id: str) -> dict:
@@ -1244,4 +1259,5 @@ class AuthorityLedger(gl.Contract):
                 flag = True
         self.precedent_index[key] = (history + "," + decision) if history else decision
         return flag
+
       

@@ -1,7 +1,7 @@
-# v0.4.0
+# v0.4.1
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 """
-ProtectedProtocol v0.4.0: demo target for AuthorityLedger.
+ProtectedProtocol v0.4.1: demo target for AuthorityLedger.
 
 v0.4 hardening (see SECURITY.md, findings F1 to F15):
   F1/F9  Every verdict is checked against owner managed lists: the scope must be accepted
@@ -16,6 +16,18 @@ v0.4 hardening (see SECURITY.md, findings F1 to F15):
          cancelled, and the owner has unpause_by_owner as a last resort.
   F11    Two step ownership transfer, delayed slash recipient change, remove_guardian cannot break the quorum.
   F14    Signatures of removed guardians are not counted, list sizes are capped.
+v0.4.1:
+  F16    An IN_SCOPE verdict counts as ratification only if the linked request passes the Ledger's
+         current authorization when resolve_ratification runs: check_authority (verdict still valid and
+         not voided, delegation chain, capability and gate live, root grantor still allowed) and then this
+         contract's own accepted scope and trusted root grantor. Any failure, or an unreachable Ledger,
+         settles the pause as a refusal, so it can never stay unresolved. A verdict lives at most one hour,
+         so resolve_ratification has to run inside that window or the pause is refused.
+  F17    propose_pause refuses an id that already exists, so a repeated call can no longer overwrite a proposal.
+  F18    A ratification request can be linked only if its requester signed that pause, so an outsider with a
+         ratification delegation cannot link a request that is bound to fail and get the signers slashed.
+  F19    A critical action stops accepting approvals when the verdict behind it lapses (the Ledger is asked again
+         at the last approval), so the approval window is capped by the verdict's valid_until, not just 24 hours.
 Behavior unchanged: pause and unpause by verdict, guardian fast path with bonds, slashing and sweep.
 """
 from genlayer import *
@@ -289,16 +301,33 @@ class ProtectedProtocol(gl.Contract):
         self._require_ledger_configured()
         return gl.get_contract_at(self.ledger_address).view().get_verdict(request_id)
 
-    def _verify_result(self, res) -> None:
-        """F1/F9: authorized, an accepted scope, and a trusted root grantor."""
+    def _authority_problem(self, res) -> str:
+        """F1/F9: empty when the Ledger authorized, the scope is accepted and the root grantor is trusted."""
         if not res["authorized"]:
-            raise gl.vm.UserError(str(res["reason"]))
+            return str(res["reason"])
         scope = str(res["scope"])
         if scope not in self.accepted_scopes or not self.accepted_scopes[scope]:
-            raise gl.vm.UserError("SCOPE_NOT_ACCEPTED")
+            return "SCOPE_NOT_ACCEPTED"
         rg = str(res["root_grantor"]).lower()
         if rg != _key(self.owner).lower() and not (rg in self.trusted_grantors and self.trusted_grantors[rg]):
-            raise gl.vm.UserError("ROOT_GRANTOR_NOT_TRUSTED")
+            return "ROOT_GRANTOR_NOT_TRUSTED"
+        return ""
+
+    def _verify_result(self, res) -> None:
+        problem = self._authority_problem(res)
+        if problem:
+            raise gl.vm.UserError(problem)
+
+    def _ratification_problem(self, request_id: str) -> str:
+        """F16: the linked request, rechecked now. Any failure, or an unreachable Ledger, is a refusal."""
+        try:
+            ledger = gl.get_contract_at(self.ledger_address)
+            req = ledger.view().get_request(request_id)
+            res = ledger.view().check_authority(
+                request_id, req["requester"], CAP_RATIFY_GUARDIAN_PAUSE, str(req["action_params_hash"]))
+            return self._authority_problem(res)
+        except Exception:
+            return "AUTHORITY_UNAVAILABLE"
 
     def _authorize_and_consume(self, request_id: str, expected_capability: str) -> None:
         if request_id in self.executed_requests:
@@ -320,10 +349,11 @@ class ProtectedProtocol(gl.Contract):
     def canonical_threshold_payload(self, new_threshold: int) -> str:
         return self._threshold_payload(new_threshold)
 
-    def _check_critical_authority(self, request_id: str, actor, payload_hash: str) -> None:
+    def _check_critical_authority(self, request_id: str, actor, payload_hash: str):
         self._require_ledger_configured()
         res = gl.get_contract_at(self.ledger_address).view().check_authority(request_id, actor, CAP_CHANGE_THRESHOLD, payload_hash)
         self._verify_result(res)
+        return res
 
     @gl.public.write
     def propose_critical_threshold_change(self, request_id: str, new_threshold: int) -> None:
@@ -334,11 +364,13 @@ class ProtectedProtocol(gl.Contract):
         if new_threshold == int(self.threshold):
             raise gl.vm.UserError("NO_CHANGE")
         payload_hash = hashlib.sha256(self._threshold_payload(new_threshold).encode()).hexdigest()
-        self._check_critical_authority(request_id, gl.message.sender_address, payload_hash)
+        res = self._check_critical_authority(request_id, gl.message.sender_address, payload_hash)
         self.executed_requests[request_id] = True
+        now = _now()
+        deadline = min(now + CRITICAL_APPROVAL_WINDOW, int(res["valid_until"]))  # F19
         self.critical_actions[request_id] = CriticalAction(
             new_threshold=u256(new_threshold), proposer=gl.message.sender_address, payload_hash=payload_hash,
-            approvals_csv="", expires_at=u64(_now() + CRITICAL_APPROVAL_WINDOW), executed=False,
+            approvals_csv="", expires_at=u64(deadline), executed=False,
         )
 
     @gl.public.write
@@ -466,6 +498,8 @@ class ProtectedProtocol(gl.Contract):
         if bond < MIN_BOND:
             raise gl.vm.UserError("INSUFFICIENT_BOND")
         pause_id = hashlib.sha256(f"pause:{justification_text}:{gl.message_raw['datetime']}:{key}".encode()).hexdigest()
+        if pause_id in self.proposals:
+            raise gl.vm.UserError("PROPOSAL_EXISTS")
         self.proposals[pause_id] = PauseProposal(
             justification_text=justification_text, signature_count=u256(1), executed=False, resolved=False,
             request_id="", paused_at_snapshot=u64(0), created_at=u64(_now()),
@@ -545,6 +579,8 @@ class ProtectedProtocol(gl.Contract):
         req = self._read_request(request_id)
         if req["capability"] != CAP_RATIFY_GUARDIAN_PAUSE:
             raise gl.vm.UserError("WRONG_CAPABILITY")
+        if f",{_key(req['requester'])}," not in f",{signers_csv},":  # F18
+            raise gl.vm.UserError("REQUESTER_NOT_A_SIGNER")
         if req["justification_hash"] != hashlib.sha256(p.justification_text.encode()).hexdigest():
             raise gl.vm.UserError("JUSTIFICATION_MISMATCH")
         if int(req["created_at"]) < int(p.paused_at_snapshot):
@@ -586,6 +622,8 @@ class ProtectedProtocol(gl.Contract):
             if (decision != "IN_SCOPE" or bool(verdict["voided"])
                     or str(verdict["justification_hash"]) != expected
                     or int(verdict["adjudicated_at"]) < int(p.paused_at_snapshot)):
+                decision = "OUT_OF_SCOPE"
+            elif self._ratification_problem(p.request_id) != "":
                 decision = "OUT_OF_SCOPE"
 
         p.resolved = True
@@ -702,4 +740,3 @@ class ProtectedProtocol(gl.Contract):
     def get_active_signed_count(self, guardian: Address) -> int:
         key = _key(guardian)
         return int(self.active_signed_count[key]) if key in self.active_signed_count else 0
-

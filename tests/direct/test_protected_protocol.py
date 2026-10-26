@@ -1,9 +1,10 @@
-"""Direct-mode suite for contracts/protected_protocol.py (v0.4.0)
+"""Direct-mode suite for contracts/protected_protocol.py (v0.4.1)
 
 Scope: everything the Protocol does on its own. Calls into the Ledger are NOT routed in gltest
 direct mode, so these paths are covered elsewhere (offline stand-in and the Studio scenarios):
   pause_via_verdict / unpause_via_verdict / the critical path with a real verdict,
-  link_ratification_request and resolve_ratification with a real Ledger verdict.
+  link_ratification_request and resolve_ratification with a real Ledger verdict, including the
+  F16 recheck of the linked request at resolution (covered by the offline suite, test_f16_*).
 Also not covered here: withdraw_bond and sweep_slashed paying out (native transfers are not
 simulated), they are covered by the Studio run.
 What is checked here for those paths: the guards that run before any Ledger call, and the
@@ -27,7 +28,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-CONTRACT = "contracts/ProtectedProtocol.py"
+CONTRACT = "contracts/protected_protocol.py"
 T0 = calendar.timegm((2026, 10, 6, 10, 0, 0))
 BOND = 10**17
 JUST = "Suspicious drain on the main pool"
@@ -346,6 +347,15 @@ def test_executed_proposal_cannot_be_cancelled(core, vm, direct_bob):
     warp(vm, T0 + 86401)
     with vm.expect_revert("ALREADY_EXECUTED"):
         core.cancel_stale_proposal(pid)
+
+
+def test_proposal_id_cannot_be_overwritten(deploy, vm, direct_bob):  # F17
+    core = deploy(2)
+    add_guardian_with_bond(core, vm, direct_bob)
+    with vm.prank(direct_bob):
+        core.propose_pause(JUST)
+        with vm.expect_revert("PROPOSAL_EXISTS"):  # same text, same time, same guardian
+            core.propose_pause(JUST)
 
 
 # ================================================================== P6 owner last resort

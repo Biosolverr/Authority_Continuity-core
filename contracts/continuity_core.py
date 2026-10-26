@@ -1,7 +1,7 @@
-# v0.4.0
+# v0.4.1
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 """
-ContinuityCore v0.4.0: evidence leases, dependency graph, AI judges with golden cases.
+ContinuityCore v0.4.1: evidence leases, dependency graph, AI judges with golden cases.
 
 v0.4 hardening (see SECURITY.md, findings F1 to F15):
   F7   Only the owner of a node (or an address the owner granted with grant_derive) can derive from it,
@@ -12,6 +12,10 @@ v0.4 hardening (see SECURITY.md, findings F1 to F15):
   F14  Revalidation, recertification runs and requests are owner only, so third parties cannot time them
        against a source outage.
   F11  Contract owner (for the host allow list) with a two step transfer.
+
+v0.4.1:
+  F20  verify_evidence is owner only, like revalidate: a third party can no longer pick the moment the source is
+       read, start the lease clock of someone else's evidence or trigger its retry cooldown.
 """
 from genlayer import *
 from dataclasses import dataclass
@@ -567,6 +571,7 @@ class ContinuityCore(gl.Contract):
     @gl.public.write
     def verify_evidence(self, evidence_id: str) -> str:
         node = self._get_evidence(evidence_id)
+        self._require_owner(node)
         if node.state != UNVERIFIED:
             raise gl.vm.UserError("NOT_UNVERIFIED")
         now = _now()
@@ -951,4 +956,3 @@ class ContinuityCore(gl.Contract):
             return []
         end = min(len(self.log), offset + min(limit, 100))
         return [self.log[i] for i in range(offset, end)]
-
